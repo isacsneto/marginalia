@@ -1,0 +1,2530 @@
+{
+  "version": 1,
+  "books": [
+    {
+      "id": "svu5g3zk4m",
+      "title": "Como Ler Livros",
+      "author": "Mortimer J. Adler e Charles Van Doren",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "lendo",
+      "progress": {
+        "current": 102,
+        "total": 412
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Lógica e Método",
+        "subcategory": "Método de leitura",
+        "nature": "prático",
+        "difficulty": 3,
+        "pages": 430,
+        "hours": 12,
+        "intro": "Guia clássico sobre como ler de forma ativa e analítica. Adler, filósofo ligado ao programa dos Grandes Livros, publicou a obra em 1940, e ela foi revista e ampliada com Charles Van Doren em 1972. O livro apresenta quatro níveis de leitura (elementar, inspecional, analítica e sintópica) e dá orientações específicas para ler ficção, poesia, história, ciência e filosofia. O leitor ganha um método para entender, interpretar e criticar livros difíceis com autonomia.",
+        "why": "Ensina a extrair muito mais de cada livro, incluindo todos os outros desta biblioteca.",
+        "themes": [
+          "níveis de leitura",
+          "leitura analítica",
+          "leitura sintópica",
+          "interpretação e crítica",
+          "autoeducação"
+        ],
+        "prerequisites": [],
+        "related": [
+          "kynxcnzk4m",
+          "l9q1brzk4m",
+          "qq5nwlzk4m",
+          "as9jgzzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:55:41.948Z"
+      },
+      "guide": {
+        "context": "Mortimer J. Adler (1902–2001) foi um filósofo americano de formação aristotélico-tomista. Ele esteve ligado ao programa dos Grandes Livros, da Universidade de Chicago e do St. John's College, e depois à coleção Great Books of the Western World. Lançou o livro em 1940 e o revisou em 1972 com Charles Van Doren, editor e escritor que colaborou com ele na Encyclopaedia Britannica. Os dois respondem a um problema que se agravou ao longo do século XX: a escola ensina a decifrar palavras, mas não ensina a ler para compreender, ou seja, a crescer em entendimento diante de um livro mais difícil do que o próprio leitor.",
+        "structure": "Na edição de 1972, base das traduções atuais, o livro tem quatro partes. A Parte I, 'As dimensões da leitura', distingue ler para informação de ler para compreensão, apresenta os quatro níveis de leitura e detalha a leitura elementar e a inspecional. O capítulo sobre ser um leitor exigente é a ponte para o resto. A Parte II é o coração da obra e trata da leitura analítica em três etapas: estrutural (classificar o livro, resumir sua unidade, enumerar as partes, identificar os problemas), interpretativa (chegar a um acordo sobre os termos, achar proposições e argumentos, ver quais problemas o autor resolveu) e crítica (regras de etiqueta intelectual e critérios para discordar). A Parte III aplica o método a livros práticos, literatura imaginativa (narrativas, peças e poemas), história, ciência e matemática, filosofia e ciências sociais. A Parte IV trata da leitura sintópica e termina com um capítulo sobre leitura e crescimento da mente. Os apêndices trazem uma lista de leituras recomendadas e exercícios para os quatro níveis. Para navegar: leia as Partes I e II na ordem, porque são cumulativas. Na Parte III, vá direto aos capítulos dos gêneros que você lê de fato e deixe os outros para consulta. A Parte IV fica para o fim, quando o método analítico já estiver claro.",
+        "keyIdeas": [
+          "Ler é uma atividade, e quanto mais esforço o leitor faz, mais aprende: ler bem significa fazer perguntas ao livro e tentar respondê-las.",
+          "Os quatro níveis de leitura (elementar, inspecional, analítica e sintópica) são cumulativos: cada nível inclui os anteriores, em vez de substituí-los.",
+          "A leitura inspecional, feita com uma pré-leitura sistemática e uma primeira leitura corrida sem parar nas dificuldades, já revela o tipo do livro e se ele merece uma leitura mais profunda.",
+          "A leitura analítica segue uma ordem: primeiro entender a estrutura do livro, depois interpretar seus termos, proposições e argumentos, e só então criticar.",
+          "Ninguém deve concordar, discordar ou suspender o juízo antes de poder dizer com honestidade 'eu entendi'; a discordância deve ser razoável, não briguenta, e precisa distinguir conhecimento de opinião pessoal.",
+          "Cada gênero pede expectativas próprias: ficção e poesia não se leem como tratados, e história, ciência e filosofia têm regras e limites diferentes.",
+          "Na leitura sintópica, o leitor reúne vários livros em torno de uma mesma questão, cria uma terminologia neutra e monta ele próprio o debate entre os autores."
+        ],
+        "watchFor": [
+          "Os conceitos de 'termo' e 'palavra' costumam confundir. Para Adler, termo é o sentido preciso que o autor dá a uma palavra, e uma mesma palavra pode carregar vários termos. Se você pular essa distinção, as regras de interpretação ficam vazias.",
+          "O método é apresentado como uma lista de regras, e pode parecer um checklist a cumprir à risca. Os próprios autores dizem que as regras descrevem um ideal e que, com o hábito, as etapas se fundem. Não vale a pena aplicar todas a todo livro.",
+          "Os quatro critérios para criticar um livro (autor desinformado, mal informado, ilógico ou com análise incompleta) são o trecho mais denso da Parte II. Leia devagar e teste cada critério num livro que você já conhece.",
+          "O capítulo sobre filosofia e a lista de leituras refletem as convicções de Adler: a confiança de que questões filosóficas admitem respostas melhores e piores, e um cânone basicamente ocidental. Outros leitores e tradições discordam desse recorte. Vale ler essas partes sabendo de onde o autor fala.",
+          "A leitura sintópica aparece no fim e parece uma técnica de pesquisa acadêmica, mas é mais simples do que soa. A armadilha é tentar fazê-la sem ter feito antes leituras analíticas dos livros envolvidos, porque ela pressupõe esse trabalho."
+        ],
+        "questions": [
+          "Antes de cada capítulo da Parte II: de que tipo é este livro que estou lendo agora e qual é a sua unidade em uma ou duas frases? Consigo responder sobre o próprio 'Como Ler Livros'?",
+          "Quais são as palavras-chave que Adler e Van Doren usam em sentido técnico, como 'informação', 'compreensão', 'termo', 'proposição' e 'sintópica', e como eles as definem?",
+          "Qual é o problema central que o livro tenta resolver, e os autores o resolvem por completo? O que fica de fora?",
+          "Em que pontos eu concordo, discordo ou suspendo o juízo? Minha discordância se apoia em algum dos quatro critérios ou só em preferência pessoal?",
+          "Escolhendo um livro da minha biblioteca: como as regras da Parte III para aquele gênero mudam o modo como eu o leria?",
+          "Que pergunta eu poderia investigar sintopicamente com os livros que já tenho, e quais autores entrariam nesse debate?"
+        ],
+        "approach": "Faça primeiro o que o próprio livro ensina: uma leitura inspecional de 30 a 60 minutos (sumário, prefácio, primeiras e últimas páginas dos capítulos principais) para ter o mapa. Depois leia as Partes I e II num ritmo de um ou dois capítulos por sessão, com lápis na mão, sublinhando e escrevendo na margem, como Adler recomenda. Como você tem o exemplar físico, aproveite para marcar à vontade. Ao fim de cada capítulo da Parte II, aplique as regras a outro livro que esteja lendo em paralelo, curto e de não ficção. A Parte III pode ser lida por partes, conforme a necessidade. O prefácio da edição revista vale a leitura, porque explica o que mudou desde 1940. O Apêndice B (exercícios) é útil se você quiser treinar de verdade, e o Apêndice A serve mais como referência do que como lista obrigatória. Edição: a tradução brasileira mais difundida é a da É Realizações, com o subtítulo 'O guia clássico para a leitura inteligente', baseada na edição de 1972. Não tenho certeza sobre os nomes de todos os tradutores, então confira na ficha técnica do seu exemplar.",
+        "connections": [
+          {
+            "id": "l9q1brzk4m",
+            "note": "É a base técnica do método de Adler. A distinção entre termo e palavra, as proposições e os silogismos que ele pede para identificar estão sistematizados no Trivium, e a obra da Irmã Miriam Joseph funciona quase como um manual de apoio à Parte II."
+          },
+          {
+            "id": "3l5b0mzk4m",
+            "note": "Balmes trata de pensar bem e julgar com acerto, e isso complementa a etapa crítica de Adler: distinguir certeza de opinião, evitar juízos precipitados e avaliar a autoridade de um autor."
+          },
+          {
+            "id": "kynxcnzk4m",
+            "note": "Sertillanges cuida da disciplina e dos hábitos do trabalho intelectual: tempo, silêncio, anotações, escolha de leituras. Adler cuida da técnica de leitura. Lidos juntos, um mostra como organizar a vida para estudar e o outro como ler o que se estuda."
+          },
+          {
+            "id": "xgi5zkzk4m",
+            "note": "Funciona como contraponto. Schopenhauer descreve estratagemas para vencer uma discussão sem ter razão, exatamente o que Adler chama de discordância briguenta. Ajuda a reconhecer, na leitura e nos debates, o que não é crítica legítima."
+          },
+          {
+            "id": "as9jgzzk4m",
+            "note": "Bom campo de treino para a leitura analítica de filosofia. Identificar a pergunta central (o que é a justiça?), acompanhar os termos que mudam de sentido ao longo do diálogo e reconstruir os argumentos é o exercício que Adler propõe."
+          },
+          {
+            "id": "mrcyzfzk4m",
+            "note": "Adler era um aristotélico declarado, e muito do seu vocabulário (termos, definições, fins) vem de Aristóteles. Ler a Ética a Nicômaco com o método dele também mostra de onde o próprio método vem."
+          },
+          {
+            "id": "qq5nwlzk4m",
+            "note": "Serve como leitura inspecional da história da filosofia: um panorama rápido que ajuda a classificar e situar os livros de filosofia antes de lê-los analiticamente."
+          },
+          {
+            "id": "s8km9fzk4m",
+            "note": "Porta organiza a filosofia em torno de problemas, não de autores, um espírito próximo da leitura sintópica. O livro mostra na prática como definir uma questão e confrontar respostas diferentes a ela."
+          },
+          {
+            "id": "th168dzk4m",
+            "note": "Junto com Capitalismo e Liberdade, A Lei, o Manifesto Comunista e O Capital, forma um ótimo projeto sintópico sobre a relação entre Estado, mercado e liberdade. O desafio é criar termos neutros para comparar autores que usam a mesma palavra, 'liberdade', em sentidos opostos."
+          },
+          {
+            "id": "n6pjfezk4m",
+            "note": "É o exemplo clássico de livro difícil, que exige leitura inspecional antes da analítica. Também é um bom teste para a regra de entender antes de criticar, seja qual for a posição do leitor."
+          },
+          {
+            "id": "g5ggdvzk4m",
+            "note": "Ótimo para aplicar as regras de literatura imaginativa: ler de uma vez, sem interromper, entrar no mundo da história e só depois perguntar o que o autor quis fazer e se conseguiu."
+          },
+          {
+            "id": "luxo5zzk4m",
+            "note": "Adler recomenda ler um poema inteiro de uma vez e depois em voz alta, prestando atenção às palavras que se repetem e às tensões. Os poemas curtos de Leminski são ideais para treinar essas sugestões."
+          },
+          {
+            "id": "gz9ma1zk4m",
+            "note": "Junto com Origens, permite praticar o capítulo sobre ciência: identificar o problema que o autor quer resolver, separar evidências de interpretações e entender o lugar dos argumentos na divulgação científica."
+          }
+        ],
+        "after": "Logo depois, vale ler o Trivium, da sua biblioteca, porque ele dá a fundamentação lógica e gramatical das regras da Parte II e torna o método mais sólido. Em seguida, escolha um livro curto e denso da sua lista, como O Príncipe ou A Lei, e faça uma leitura analítica completa, escrevendo o esboço estrutural e os termos-chave. Depois, monte um pequeno projeto sintópico com três ou quatro livros sobre uma mesma questão, por exemplo 'o que justifica o poder do Estado?' com Maquiavel, Bastiat, Hayek e Marx. Fora da biblioteca, há dois livros de Adler que seguem naturalmente: 'Como Pensar sobre as Grandes Ideias', que retoma o projeto sintópico, e 'Aristóteles para Todos', que mostra as bases filosóficas do seu método. Creio que ambos foram publicados no Brasil, mas confirme a disponibilidade.",
+        "provider": "Claude Code",
+        "generatedAt": "2026-11-09T16:25:20.842Z"
+      },
+      "userPhase": "Fundamentos intelectuais, lógica e argumentação",
+      "priority": true,
+      "startedAt": "2026-11-09",
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.253Z",
+      "updatedAt": "2026-11-09T12:54:38.746Z"
+    },
+    {
+      "id": "l9q1brzk4m",
+      "title": "Trivium: As Artes Liberais da Lógica, Gramática e Retórica",
+      "author": "Irmã Miriam Joseph",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 350
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Lógica e Método",
+        "subcategory": "Artes liberais / Trivium",
+        "nature": "teórico",
+        "difficulty": 4,
+        "pages": 350,
+        "hours": 15,
+        "intro": "Manual sobre as três artes da linguagem na tradição clássica e medieval: lógica, gramática e retórica. A autora, religiosa da Congregação da Santa Cruz, organizou o curso para o Saint Mary's College (Notre Dame, EUA) a partir de 1937. A obra trata de termos, proposições, silogismos, falácias e figuras de linguagem, com exemplos tirados da literatura. O leitor ganha ferramentas para pensar, escrever e argumentar com mais rigor.",
+        "why": "Oferece uma base sistemática de lógica e linguagem para quem quer estudar por conta própria.",
+        "themes": [
+          "lógica formal",
+          "gramática filosófica",
+          "retórica",
+          "silogismo",
+          "falácias"
+        ],
+        "prerequisites": [
+          "noções de gramática da língua portuguesa",
+          "Como Ler Livros (opcional)"
+        ],
+        "related": [
+          "svu5g3zk4m",
+          "3l5b0mzk4m",
+          "xgi5zkzk4m",
+          "4jzngqzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:55:41.948Z"
+      },
+      "guide": null,
+      "userPhase": "Fundamentos intelectuais, lógica e argumentação",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:00.023Z"
+    },
+    {
+      "id": "3l5b0mzk4m",
+      "title": "O Critério",
+      "author": "Jaime Balmes",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 300
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Lógica e Método",
+        "subcategory": "Lógica aplicada / bom senso",
+        "nature": "prático",
+        "difficulty": 3,
+        "pages": 300,
+        "hours": 9,
+        "intro": "Tratado sobre como pensar bem em situações concretas, publicado em 1845 pelo padre e filósofo catalão Jaime Balmes. Em vez de lógica formal, o livro trata do juízo prático: como avaliar testemunhos, notícias, história, política e moral, e como as paixões e os hábitos distorcem o raciocínio. O leitor ganha critérios claros para formar opiniões com prudência e evitar erros comuns.",
+        "why": "É um manual de bom senso que aplica a lógica à vida real.",
+        "themes": [
+          "juízo prático",
+          "busca da verdade",
+          "erros de raciocínio",
+          "influência das paixões",
+          "prudência"
+        ],
+        "prerequisites": [],
+        "related": [
+          "l9q1brzk4m",
+          "kynxcnzk4m",
+          "svu5g3zk4m",
+          "xgi5zkzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:55:41.948Z"
+      },
+      "guide": null,
+      "userPhase": "Fundamentos intelectuais, lógica e argumentação",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:26:58.915Z"
+    },
+    {
+      "id": "qq5nwlzk4m",
+      "title": "Uma Breve História da Filosofia",
+      "author": "Nigel Warburton",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 270
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Introdução / História da filosofia",
+        "nature": "teórico",
+        "difficulty": 1,
+        "pages": 270,
+        "hours": 6,
+        "intro": "Panorama da filosofia ocidental em 40 capítulos curtos, de Sócrates a pensadores contemporâneos como Peter Singer. Warburton, filósofo britânico conhecido como divulgador (podcast Philosophy Bites), publicou a obra em 2011 pensando em leitores iniciantes. Cada capítulo apresenta um pensador ou problema central de forma acessível. O leitor ganha um mapa geral para se orientar antes de ler os clássicos.",
+        "why": "É uma porta de entrada leve e confiável para a história da filosofia.",
+        "themes": [
+          "história da filosofia ocidental",
+          "grandes pensadores",
+          "problemas filosóficos",
+          "ética",
+          "conhecimento"
+        ],
+        "prerequisites": [],
+        "related": [
+          "as9jgzzk4m",
+          "mrcyzfzk4m",
+          "s8km9fzk4m",
+          "x857q8zk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:55:41.948Z"
+      },
+      "guide": null,
+      "userPhase": "Fundamentos intelectuais, lógica e argumentação",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:26:59.965Z"
+    },
+    {
+      "id": "xgi5zkzk4m",
+      "title": "Como Vencer um Debate sem Precisar Ter Razão",
+      "author": "Arthur Schopenhauer",
+      "format": "audiobook",
+      "ownership": "tenho",
+      "status": "lendo",
+      "progress": {
+        "current": 4,
+        "total": 11
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Lógica e Método",
+        "subcategory": "Dialética erística / Argumentação",
+        "nature": "misto",
+        "difficulty": 2,
+        "pages": 200,
+        "hours": 5,
+        "intro": "Texto curto que Schopenhauer deixou em manuscrito por volta de 1830-1831 e que foi publicado após sua morte. O autor descreve 38 estratagemas usados para vencer discussões independentemente da verdade, como generalizar a tese do adversário, mudar de assunto ou apelar para a autoridade. O tom é irônico e a intenção declarada é ajudar o leitor a reconhecer e se defender dessas manobras. A edição brasileira mais conhecida (Topbooks) traz comentários de Olavo de Carvalho.",
+        "why": "Ajuda a identificar truques retóricos em debates, na política e na mídia.",
+        "themes": [
+          "dialética erística",
+          "estratagemas retóricos",
+          "falácias",
+          "debate",
+          "verdade e persuasão"
+        ],
+        "prerequisites": [
+          "noções básicas de lógica e falácias (opcional)"
+        ],
+        "related": [
+          "4jzngqzk4m",
+          "l9q1brzk4m",
+          "3l5b0mzk4m",
+          "wmxslczk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:55:41.948Z"
+      },
+      "guide": null,
+      "userPhase": "Fundamentos intelectuais, lógica e argumentação",
+      "priority": false,
+      "startedAt": "2026-11-01",
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:26:59.942Z"
+    },
+    {
+      "id": "kynxcnzk4m",
+      "title": "A Vida Intelectual",
+      "author": "A.-D. Sertillanges",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 240
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Lógica e Método",
+        "subcategory": "Método de estudo / Vida intelectual",
+        "nature": "prático",
+        "difficulty": 3,
+        "pages": 240,
+        "hours": 7,
+        "intro": "Obra de 1920 do frade dominicano francês Antonin-Dalmace Sertillanges, estudioso de Santo Tomás de Aquino. Trata do trabalho intelectual como vocação e dá conselhos concretos sobre disciplina, organização do tempo, leitura, anotações, silêncio e as virtudes necessárias ao estudo. O tom é espiritual e inspirado na tradição tomista, mas grande parte dos conselhos serve a qualquer leitor. O leitor ganha orientação para construir uma rotina de estudo sólida e duradoura.",
+        "why": "Ensina a estudar com disciplina e sentido ao longo da vida.",
+        "themes": [
+          "vocação intelectual",
+          "disciplina de estudo",
+          "organização do tempo",
+          "leitura e anotação",
+          "virtudes intelectuais"
+        ],
+        "prerequisites": [],
+        "related": [
+          "svu5g3zk4m",
+          "3l5b0mzk4m",
+          "l9q1brzk4m",
+          "fcllpqzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:55:41.948Z"
+      },
+      "guide": null,
+      "userPhase": "Fundamentos intelectuais, lógica e argumentação",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:02.116Z"
+    },
+    {
+      "id": "as9jgzzk4m",
+      "title": "A República",
+      "author": "Platão",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 420
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Filosofia política e ética platônica",
+        "nature": "teórico",
+        "difficulty": 4,
+        "pages": 420,
+        "hours": 20,
+        "intro": "Diálogo da maturidade de Platão (c. 375 a.C.) em que Sócrates parte da pergunta 'o que é a justiça?' e, para respondê-la, imagina uma cidade ideal governada por filósofos. A obra trata da educação, da estrutura da alma, da teoria das Ideias e das alegorias da caverna e da linha dividida, além de criticar a poesia e as formas degeneradas de governo. É um dos textos fundadores do pensamento ocidental e oferece ao leitor um panorama quase completo da filosofia de Platão. O número de páginas varia bastante conforme a edição brasileira (Edipro, Martin Claret, Gulbenkian, entre outras).",
+        "why": "É a obra central de Platão e referência obrigatória para entender ética, política e metafísica no Ocidente.",
+        "themes": [
+          "justiça",
+          "cidade ideal e regimes políticos",
+          "educação e formação do caráter",
+          "teoria das Ideias",
+          "alegoria da caverna"
+        ],
+        "prerequisites": [
+          "Diálogos socráticos mais curtos, como Apologia de Sócrates e Górgias",
+          "Uma visão geral da filosofia grega"
+        ],
+        "related": [
+          "4jzngqzk4m",
+          "mrcyzfzk4m",
+          "mb7kf1zk4m",
+          "qq5nwlzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:56:26.229Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia clássica: Grécia Antiga",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:02.155Z"
+    },
+    {
+      "id": "wmxslczk4m",
+      "title": "Diálogos I: Teeteto, Sofista e Protágoras",
+      "author": "Platão",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 300
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Epistemologia e ontologia platônicas",
+        "nature": "teórico",
+        "difficulty": 4,
+        "pages": 300,
+        "hours": 15,
+        "intro": "Coletânea de três diálogos, provavelmente na edição da Edipro com tradução de Edson Bini. Teeteto investiga o que é o conhecimento e examina a tese de Protágoras de que 'o homem é a medida de todas as coisas'. Sofista, um dos textos mais densos de Platão, discute o ser e o não-ser e aplica o método da divisão para definir o sofista. Protágoras, mais vivo e acessível, debate se a virtude pode ser ensinada.",
+        "why": "Mostra Platão enfrentando as perguntas mais básicas da filosofia: o que é conhecer e o que é ser.",
+        "themes": [
+          "natureza do conhecimento",
+          "ser e não-ser",
+          "sofística e relativismo",
+          "a virtude pode ser ensinada?",
+          "método dialético"
+        ],
+        "prerequisites": [
+          "Diálogos socráticos iniciais, como os do volume Diálogos III",
+          "Noções básicas de filosofia pré-socrática, sobretudo Parmênides e Heráclito"
+        ],
+        "related": [
+          "as9jgzzk4m",
+          "4jzngqzk4m",
+          "s8km9fzk4m",
+          "l9q1brzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:56:26.229Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia clássica: Grécia Antiga",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:00.955Z"
+    },
+    {
+      "id": "4jzngqzk4m",
+      "title": "Diálogos II: Górgias, Eutidemo e outros",
+      "author": "Platão",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 280
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Diálogos socráticos: retórica e ética",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 280,
+        "hours": 13,
+        "intro": "Volume que reúne Górgias e Eutidemo; na edição Edipro, também traz Hípias Maior e Hípias Menor. Em Górgias, Sócrates confronta a retórica e a ética do poder defendida por Cálicles e sustenta que é pior cometer injustiça do que sofrê-la. Eutidemo satiriza a erística, a arte de vencer discussões com truques verbais. Os dois Hípias discutem o belo e a mentira voluntária. Você ganha uma visão clara de como Platão separa a argumentação honesta da persuasão manipuladora.",
+        "why": "Górgias é um dos debates mais intensos de Platão sobre poder, retórica e a vida que vale a pena viver.",
+        "themes": [
+          "retórica e persuasão",
+          "justiça e poder",
+          "erística e falácias",
+          "o belo",
+          "a melhor forma de viver"
+        ],
+        "prerequisites": [
+          "Apologia de Sócrates, para conhecer a figura de Sócrates"
+        ],
+        "related": [
+          "xgi5zkzk4m",
+          "l9q1brzk4m",
+          "as9jgzzk4m",
+          "wmxslczk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:56:26.229Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia clássica: Grécia Antiga",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:01.814Z"
+    },
+    {
+      "id": "gt7o02zk4m",
+      "title": "Diálogos III: Fedro, Eutífron e outros",
+      "author": "Platão",
+      "format": "fisico",
+      "ownership": "desejo",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 300
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Diálogos socráticos e de maturidade",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 300,
+        "hours": 14,
+        "intro": "Na edição Edipro, este volume reúne Fedro, Eutífron, Apologia de Sócrates, Críton e Fédon; vale confirmar o conteúdo do seu exemplar. Eutífron, Apologia, Críton e Fédon acompanham o processo, a prisão e a morte de Sócrates e tratam da piedade, do dever com as leis e da imortalidade da alma. Fedro discute o amor, a beleza, a retórica e os limites da escrita. É uma ótima porta de entrada para Platão e para a própria figura de Sócrates.",
+        "why": "Reúne os textos que mostram Sócrates diante da morte, o melhor começo para ler Platão.",
+        "themes": [
+          "julgamento e morte de Sócrates",
+          "imortalidade da alma",
+          "piedade e dever",
+          "amor e beleza",
+          "oralidade e escrita"
+        ],
+        "prerequisites": [],
+        "related": [
+          "as9jgzzk4m",
+          "4jzngqzk4m",
+          "fcllpqzk4m",
+          "g5ggdvzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:56:26.229Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia clássica: Grécia Antiga",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:03.869Z"
+    },
+    {
+      "id": "mrcyzfzk4m",
+      "title": "Ética a Nicômaco",
+      "author": "Aristóteles",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 320
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Ética aristotélica",
+        "nature": "teórico",
+        "difficulty": 4,
+        "pages": 300,
+        "hours": 16,
+        "intro": "Principal obra ética de Aristóteles, provavelmente composta a partir de suas aulas no Liceu (século IV a.C.). Ela investiga a eudaimonia, termo traduzido como felicidade ou florescimento humano, e a define como atividade da alma conforme a virtude. Analisa as virtudes morais como meio-termo entre extremos, a sabedoria prática (phronesis), a justiça, a amizade e o prazer. O texto é seco e técnico, mas oferece uma das bases mais duradouras da ética ocidental.",
+        "why": "É o texto fundador da ética das virtudes e ainda orienta o debate sobre como viver bem.",
+        "themes": [
+          "felicidade (eudaimonia)",
+          "virtude como meio-termo",
+          "sabedoria prática",
+          "justiça",
+          "amizade"
+        ],
+        "prerequisites": [
+          "Noções gerais de Platão, por exemplo A República",
+          "Uma introdução à filosofia grega"
+        ],
+        "related": [
+          "as9jgzzk4m",
+          "x857q8zk4m",
+          "4jzngqzk4m",
+          "qq5nwlzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:56:26.229Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia clássica: Grécia Antiga",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:03.915Z"
+    },
+    {
+      "id": "x857q8zk4m",
+      "title": "Meditações",
+      "author": "Marco Aurélio",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 210
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Estoicismo",
+        "nature": "prático",
+        "difficulty": 2,
+        "pages": 180,
+        "hours": 7,
+        "intro": "Anotações pessoais do imperador romano Marco Aurélio (121–180 d.C.), escritas em grego e em grande parte durante campanhas militares, sem intenção de publicação. São exercícios de autodisciplina baseados no estoicismo: aceitar o que não depende de nós, agir com justiça, lembrar da brevidade da vida e da ordem racional do cosmos. A leitura pode ser feita aos poucos e funciona como guia prático de serenidade e responsabilidade.",
+        "why": "É um diário íntimo de um governante tentando viver segundo a razão, útil para reflexão diária.",
+        "themes": [
+          "autodomínio",
+          "aceitação do destino",
+          "brevidade da vida e da morte",
+          "dever e vida comunitária",
+          "razão universal (logos)"
+        ],
+        "prerequisites": [],
+        "related": [
+          "mrcyzfzk4m",
+          "fcllpqzk4m",
+          "g5ggdvzk4m",
+          "kynxcnzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:56:26.229Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia helenística e cristã",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:03.484Z"
+    },
+    {
+      "id": "fcllpqzk4m",
+      "title": "Confissões",
+      "author": "Santo Agostinho",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 417
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Religião e Espiritualidade",
+        "subcategory": "Patrística / autobiografia espiritual",
+        "nature": "misto",
+        "difficulty": 4,
+        "pages": 400,
+        "hours": 14,
+        "intro": "Escrita por volta de 397–400 d.C., quando Agostinho já era bispo de Hipona, a obra é uma longa oração dirigida a Deus. Narra sua juventude, a passagem pelo maniqueísmo e pelo neoplatonismo e a conversão ao cristianismo. Os livros finais trocam a narrativa por reflexões filosóficas sobre memória, tempo e criação. É considerada a primeira grande autobiografia do Ocidente e uma das bases do pensamento cristão.",
+        "why": "Une introspecção pessoal e alta filosofia, e a reflexão sobre o tempo do livro XI continua influente até hoje.",
+        "themes": [
+          "conversão e graça",
+          "memória e interioridade",
+          "natureza do tempo",
+          "o problema do mal",
+          "desejo e vontade"
+        ],
+        "prerequisites": [
+          "noções básicas de Platão e do neoplatonismo",
+          "contexto do Império Romano tardio e do cristianismo antigo"
+        ],
+        "related": [
+          "as9jgzzk4m",
+          "gt7o02zk4m",
+          "x857q8zk4m",
+          "g5ggdvzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:04.472Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia helenística e cristã",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:04.914Z"
+    },
+    {
+      "id": "1plhb3zk4m",
+      "title": "Filosofia e Cosmovisão",
+      "author": "Mário Ferreira dos Santos",
+      "format": "ebook",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 300
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Introdução à filosofia / filosofia brasileira",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 300,
+        "hours": 10,
+        "intro": "Publicado em 1952, é o volume que abre a Enciclopédia de Ciências Filosóficas e Sociais do filósofo paulista Mário Ferreira dos Santos. O autor distingue a filosofia, que busca um saber rigoroso e fundamentado, da cosmovisão, que é a visão de mundo que cada pessoa ou cultura adota, muitas vezes sem examiná-la. O livro percorre as principais posições filosóficas e serve de porta de entrada para o sistema do autor, que ele chamou de filosofia concreta. O leitor ganha um mapa das grandes questões e um critério para examinar as próprias crenças.",
+        "why": "Ajuda a separar opinião de conhecimento filosófico e apresenta um dos pensadores brasileiros mais ambiciosos.",
+        "themes": [
+          "natureza da filosofia",
+          "cosmovisões e visões de mundo",
+          "conhecimento e crença",
+          "panorama das escolas filosóficas"
+        ],
+        "prerequisites": [
+          "uma história geral da filosofia ajuda, mas não é indispensável"
+        ],
+        "related": [
+          "qq5nwlzk4m",
+          "s8km9fzk4m",
+          "3l5b0mzk4m",
+          "u6j6qizk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:04.472Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia brasileira e aprofundamento",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:04.870Z"
+    },
+    {
+      "id": "s8km9fzk4m",
+      "title": "A Filosofia a Partir de Seus Problemas",
+      "author": "Mário Ariel González Porta",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 190
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Introdução à filosofia / metodologia",
+        "nature": "misto",
+        "difficulty": 3,
+        "pages": 190,
+        "hours": 7,
+        "intro": "Escrito por um professor de filosofia da PUC-SP e publicado pelas Edições Loyola, o livro foi pensado para quem começa a estudar filosofia. Em vez de contar a história das doutrinas, mostra que cada teoria filosófica responde a um problema e que só a entendemos de verdade quando identificamos esse problema. Também traz orientações práticas sobre como ler e analisar textos filosóficos. O leitor ganha um método de estudo, não apenas um conteúdo.",
+        "why": "Ensina a ler filosofia identificando o problema por trás de cada teoria.",
+        "themes": [
+          "o que é um problema filosófico",
+          "leitura e interpretação de textos",
+          "método de estudo em filosofia",
+          "relação entre problema e teoria"
+        ],
+        "prerequisites": [],
+        "related": [
+          "qq5nwlzk4m",
+          "svu5g3zk4m",
+          "1plhb3zk4m",
+          "l9q1brzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:04.472Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia brasileira e aprofundamento",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:04.928Z"
+    },
+    {
+      "id": "u6j6qizk4m",
+      "title": "Análise Dialética do Marxismo",
+      "author": "Mário Ferreira dos Santos",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 300
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Filosofia política / crítica ao marxismo",
+        "nature": "teórico",
+        "difficulty": 4,
+        "pages": 300,
+        "hours": 11,
+        "intro": "Publicado nos anos 1950, o livro examina as bases filosóficas do marxismo, em especial a dialética herdada de Hegel e o materialismo histórico. Mário Ferreira dos Santos aplica à obra de Marx o método que chamou de dialética concreta e aponta o que considera falhas lógicas e reduções da doutrina. É uma crítica filosófica, mais do que econômica ou partidária. O leitor conhece os conceitos centrais do marxismo e uma objeção sistemática a eles. Não tenho certeza do número exato de páginas da edição atual.",
+        "why": "Oferece uma crítica filosófica densa ao marxismo, escrita por um pensador brasileiro.",
+        "themes": [
+          "dialética hegeliana e marxista",
+          "materialismo histórico",
+          "crítica filosófica do marxismo",
+          "dialética concreta"
+        ],
+        "prerequisites": [
+          "Manifesto do Partido Comunista",
+          "noções de Hegel e da dialética",
+          "Filosofia e Cosmovisão, do mesmo autor"
+        ],
+        "related": [
+          "qcgq4rzk4m",
+          "n6pjfezk4m",
+          "byiq9azk4m",
+          "1plhb3zk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:04.472Z"
+      },
+      "guide": null,
+      "userPhase": "Filosofia brasileira e aprofundamento",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:06.010Z"
+    },
+    {
+      "id": "mb7kf1zk4m",
+      "title": "O Príncipe",
+      "author": "Nicolau Maquiavel",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 160
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Política",
+        "subcategory": "Realismo político / pensamento renascentista",
+        "nature": "misto",
+        "difficulty": 2,
+        "pages": 160,
+        "hours": 5,
+        "intro": "Escrito em 1513 por um diplomata florentino afastado do poder, o livro é um tratado curto sobre como conquistar e manter um principado. Maquiavel descreve a política como ela funciona na prática, e não como deveria ser, separando a ação política da moral tradicional. Usa exemplos históricos e de sua época para tratar de virtù, fortuna, exércitos e reputação. É considerado um marco da ciência política moderna e segue sendo debatido e interpretado de formas muito diferentes.",
+        "why": "É um clássico curto e direto que fundou a reflexão realista sobre o poder.",
+        "themes": [
+          "poder e Estado",
+          "virtù e fortuna",
+          "relação entre ética e política",
+          "liderança e reputação"
+        ],
+        "prerequisites": [
+          "noções da Itália renascentista ajudam a entender os exemplos"
+        ],
+        "related": [
+          "fnpe8dzk4m",
+          "as9jgzzk4m",
+          "mrcyzfzk4m",
+          "ze4qkbzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:04.472Z"
+      },
+      "guide": null,
+      "userPhase": "Política, poder e teoria do Estado",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:06.093Z"
+    },
+    {
+      "id": "fnpe8dzk4m",
+      "title": "A Arte da Guerra",
+      "author": "Sun Tzu",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 130
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Política",
+        "subcategory": "Estratégia militar / pensamento chinês clássico",
+        "nature": "prático",
+        "difficulty": 2,
+        "pages": 120,
+        "hours": 3,
+        "intro": "Atribuído ao general chinês Sun Tzu e datado de cerca do século V a.C., o tratado reúne em treze capítulos breves princípios sobre planejamento, terreno, informação e uso da força. Sua ideia central é que a melhor vitória é aquela obtida sem combate, por meio do conhecimento de si e do adversário. Hoje é lido também como guia de estratégia em negócios, esportes e negociações. As edições brasileiras variam bastante em tamanho, conforme os comentários incluídos.",
+        "why": "Ensina a pensar estrategicamente em poucas páginas.",
+        "themes": [
+          "estratégia e planejamento",
+          "conhecimento do adversário",
+          "engano e informação",
+          "vencer sem combater"
+        ],
+        "prerequisites": [],
+        "related": [
+          "mb7kf1zk4m",
+          "xgi5zkzk4m",
+          "qv4d8kzk4m",
+          "x857q8zk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:04.472Z"
+      },
+      "guide": null,
+      "userPhase": "Política, poder e teoria do Estado",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:06.318Z"
+    },
+    {
+      "id": "ze4qkbzk4m",
+      "title": "Anatomia do Estado",
+      "author": "Murray N. Rothbard",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "lido",
+      "progress": {
+        "current": 70,
+        "total": 70
+      },
+      "rating": 5,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Política",
+        "subcategory": "Libertarianismo / Anarcocapitalismo",
+        "nature": "teórico",
+        "difficulty": 2,
+        "pages": 70,
+        "hours": 2,
+        "intro": "Ensaio curto em que Rothbard, economista da Escola Austríaca e principal teórico do anarcocapitalismo, define o Estado como a organização que obtém sua renda pela coerção, e não pela troca voluntária. Ele examina como o Estado se mantém, buscando legitimidade junto a intelectuais e à opinião pública, e como tende a escapar dos limites que lhe são impostos. Publicado em 1974 numa coletânea de ensaios, o texto apresenta de forma concentrada a visão libertária radical sobre o poder político.",
+        "why": "É a porta de entrada mais curta e direta para a crítica libertária ao Estado.",
+        "themes": [
+          "natureza do Estado",
+          "coerção e legitimidade",
+          "papel dos intelectuais",
+          "limites do poder",
+          "anarcocapitalismo"
+        ],
+        "prerequisites": [],
+        "related": [
+          "65s89azk4m",
+          "c2dbhszk4m",
+          "mb7kf1zk4m",
+          "th168dzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:44.111Z"
+      },
+      "guide": null,
+      "userPhase": "Política, poder e teoria do Estado",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": "2026-11-09",
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:08.442Z"
+    },
+    {
+      "id": "c2dbhszk4m",
+      "title": "A Lei",
+      "author": "Frédéric Bastiat",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 80
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Política",
+        "subcategory": "Liberalismo clássico",
+        "nature": "teórico",
+        "difficulty": 1,
+        "pages": 80,
+        "hours": 2,
+        "intro": "Escrito em 1850 pelo economista e deputado francês Frédéric Bastiat, pouco antes de sua morte, o panfleto defende que a lei existe para proteger a vida, a liberdade e a propriedade. Segundo o autor, ela se perverte quando passa a promover o que ele chama de 'espoliação legal', isto é, tirar de uns para dar a outros. Escrito em estilo claro e polêmico no contexto da Revolução de 1848, é um clássico do liberalismo e uma crítica direta ao socialismo de sua época.",
+        "why": "Mostra, em poucas páginas e com clareza rara, o fundamento da visão liberal clássica sobre a lei e a justiça.",
+        "themes": [
+          "finalidade da lei",
+          "propriedade e liberdade",
+          "espoliação legal",
+          "crítica ao socialismo",
+          "direito natural"
+        ],
+        "prerequisites": [],
+        "related": [
+          "ze4qkbzk4m",
+          "yqszsezk4m",
+          "kv4b0jzk4m",
+          "qcgq4rzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:44.111Z"
+      },
+      "guide": null,
+      "userPhase": "Política, poder e teoria do Estado",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:07.150Z"
+    },
+    {
+      "id": "yqszsezk4m",
+      "title": "Economia em uma Única Lição",
+      "author": "Henry Hazlitt",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 230
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Economia",
+        "subcategory": "Economia liberal / Escola Austríaca",
+        "nature": "teórico",
+        "difficulty": 2,
+        "pages": 230,
+        "hours": 7,
+        "intro": "Publicado em 1946 pelo jornalista econômico americano Henry Hazlitt, o livro desenvolve uma única ideia, inspirada na falácia da janela quebrada de Bastiat. A boa análise econômica, segundo ele, considera os efeitos de longo prazo de uma política sobre todos os grupos, e não apenas os efeitos imediatos sobre um grupo. A partir disso, examina controle de preços, tarifas, salário mínimo, obras públicas e inflação. É uma das introduções à economia de mercado mais lidas do mundo, escrita sem matemática e com muitos exemplos.",
+        "why": "Ensina a pensar nas consequências invisíveis das políticas econômicas de forma simples e prática.",
+        "themes": [
+          "efeitos visíveis e invisíveis",
+          "intervenção estatal",
+          "sistema de preços",
+          "inflação",
+          "comércio e protecionismo"
+        ],
+        "prerequisites": [],
+        "related": [
+          "c2dbhszk4m",
+          "kv4b0jzk4m",
+          "th168dzk4m",
+          "n6pjfezk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:44.111Z"
+      },
+      "guide": null,
+      "userPhase": "Economia, liberalismo e capitalismo",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:07.001Z"
+    },
+    {
+      "id": "th168dzk4m",
+      "title": "O Caminho da Servidão",
+      "author": "Friedrich Hayek",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 270
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Política",
+        "subcategory": "Liberalismo clássico / Escola Austríaca",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 270,
+        "hours": 10,
+        "intro": "Escrito em 1944 na Inglaterra pelo economista austríaco Friedrich Hayek, futuro Nobel de Economia (1974), o livro argumenta que o planejamento econômico centralizado tende a concentrar poder e a corroer as liberdades individuais. Para Hayek, esse caminho pode levar ao totalitarismo mesmo quando é adotado com boas intenções. O autor sustenta que o nazismo e o comunismo têm raízes comuns na rejeição do liberalismo e alerta as democracias ocidentais contra esse rumo. É uma obra central do pensamento liberal do século XX e ainda provoca debate entre defensores e críticos do Estado de bem-estar.",
+        "why": "É um dos argumentos mais influentes do século XX sobre a relação entre planejamento econômico e liberdade política.",
+        "themes": [
+          "planejamento central",
+          "totalitarismo",
+          "Estado de direito",
+          "liberdade individual",
+          "conhecimento disperso"
+        ],
+        "prerequisites": [
+          "noções de história europeia do entreguerras (fascismo, nazismo e socialismo soviético)"
+        ],
+        "related": [
+          "kv4b0jzk4m",
+          "byiq9azk4m",
+          "qcgq4rzk4m",
+          "yqszsezk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:44.111Z"
+      },
+      "guide": null,
+      "userPhase": "Economia, liberalismo e capitalismo",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:08.077Z"
+    },
+    {
+      "id": "kv4b0jzk4m",
+      "title": "Capitalismo e Liberdade",
+      "author": "Milton Friedman",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 200
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Economia",
+        "subcategory": "Escola de Chicago / Monetarismo",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 200,
+        "hours": 7,
+        "intro": "Publicado em 1962, o livro reúne as ideias de Milton Friedman, economista da Universidade de Chicago e Nobel de 1976, sobre a relação entre liberdade econômica e liberdade política. Friedman discute o papel limitado que atribui ao governo e a política monetária. Também apresenta propostas concretas que se tornaram célebres, como os vouchers educacionais, o imposto de renda negativo e o fim do licenciamento profissional obrigatório. Diferente da Escola Austríaca, adota uma abordagem empírica e pragmática, o que o torna útil para comparar as vertentes do pensamento liberal.",
+        "why": "Apresenta propostas liberais concretas de políticas públicas, além de princípios gerais.",
+        "themes": [
+          "liberdade econômica e política",
+          "papel do governo",
+          "política monetária",
+          "educação e vouchers",
+          "imposto de renda negativo"
+        ],
+        "prerequisites": [
+          "noções básicas de economia (inflação, moeda, mercado)",
+          "Economia em uma Única Lição (opcional)"
+        ],
+        "related": [
+          "th168dzk4m",
+          "yqszsezk4m",
+          "65s89azk4m",
+          "n6pjfezk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:44.111Z"
+      },
+      "guide": null,
+      "userPhase": "Economia, liberalismo e capitalismo",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:08.039Z"
+    },
+    {
+      "id": "65s89azk4m",
+      "title": "Por Uma Nova Liberdade: O Manifesto Libertário",
+      "author": "Murray N. Rothbard",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 430
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Política",
+        "subcategory": "Libertarianismo / Anarcocapitalismo",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 430,
+        "hours": 14,
+        "intro": "Publicado em 1973, é a exposição mais completa e programática de Rothbard sobre o libertarianismo. O livro parte do axioma da não agressão e dos direitos de propriedade e aplica esses princípios a temas como educação, previdência, guerra, meio ambiente, segurança e justiça. Rothbard propõe que até mesmo polícia e tribunais sejam oferecidos por agentes privados, e não pelo Estado. É uma referência central para quem quer entender o anarcocapitalismo e se diferencia de liberais como Hayek e Friedman, que defendem um Estado limitado, mas não sua abolição.",
+        "why": "É o manifesto mais abrangente do libertarianismo radical e mostra como seus princípios se aplicam a problemas concretos.",
+        "themes": [
+          "princípio da não agressão",
+          "direitos de propriedade",
+          "privatização de serviços públicos",
+          "guerra e política externa",
+          "anarcocapitalismo"
+        ],
+        "prerequisites": [
+          "Anatomia do Estado",
+          "noções básicas de economia"
+        ],
+        "related": [
+          "ze4qkbzk4m",
+          "c2dbhszk4m",
+          "kv4b0jzk4m",
+          "th168dzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:57:44.111Z"
+      },
+      "guide": null,
+      "userPhase": "Economia, liberalismo e capitalismo",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:12.510Z"
+    },
+    {
+      "id": "qv4d8kzk4m",
+      "title": "O Jeito Warren Buffett de Investir",
+      "author": "Robert G. Hagstrom",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 270
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Investimentos e Negócios",
+        "subcategory": "Value investing (investimento em valor)",
+        "nature": "prático",
+        "difficulty": 2,
+        "pages": 270,
+        "hours": 8,
+        "intro": "Hagstrom, gestor de fundos americano, organiza os princípios que guiam as decisões de Warren Buffett na Berkshire Hathaway. Trata da análise do negócio, da qualidade da gestão, de indicadores financeiros e de como avaliar o valor de uma empresa. Mostra também a influência de Benjamin Graham e Philip Fisher sobre Buffett. O leitor sai com um roteiro claro para pensar ações como participação em empresas, e não como apostas de curto prazo.",
+        "why": "É uma porta de entrada clara e prática para a filosofia de investimento de longo prazo mais influente do século XX.",
+        "themes": [
+          "Investimento em valor",
+          "Análise fundamentalista de empresas",
+          "Margem de segurança",
+          "Disciplina e temperamento do investidor",
+          "Alocação de capital"
+        ],
+        "prerequisites": [
+          "Noções básicas de contabilidade e mercado de ações"
+        ],
+        "related": [
+          "yqszsezk4m",
+          "kv4b0jzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:22.058Z"
+      },
+      "guide": null,
+      "userPhase": "Economia, liberalismo e capitalismo",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:09.130Z"
+    },
+    {
+      "id": "qcgq4rzk4m",
+      "title": "Manifesto do Partido Comunista",
+      "author": "Karl Marx e Friedrich Engels",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 96
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Política",
+        "subcategory": "Marxismo / Socialismo",
+        "nature": "teórico",
+        "difficulty": 2,
+        "pages": 96,
+        "hours": 3,
+        "intro": "Publicado em 1848 a pedido da Liga dos Comunistas, o Manifesto apresenta de forma curta e retórica a visão de Marx e Engels sobre a história como luta de classes. Descreve a ascensão da burguesia, a formação do proletariado e o programa comunista. A extensão varia muito conforme a edição, porque algumas incluem prefácios e ensaios de apoio. É um dos textos políticos mais lidos e debatidos da história moderna, e ajuda a entender movimentos e polêmicas que marcaram os séculos XIX e XX.",
+        "why": "Em poucas páginas, dá acesso direto às ideias centrais de uma das tradições políticas mais influentes da modernidade.",
+        "themes": [
+          "Luta de classes",
+          "Burguesia e proletariado",
+          "Crítica à propriedade privada",
+          "Revolução",
+          "Materialismo histórico"
+        ],
+        "prerequisites": [
+          "Noções sobre a Revolução Industrial e a Europa do século XIX"
+        ],
+        "related": [
+          "n6pjfezk4m",
+          "u6j6qizk4m",
+          "byiq9azk4m",
+          "th168dzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:22.058Z"
+      },
+      "guide": null,
+      "userPhase": "Marxismo, comunismo e crítica histórica",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:09.689Z"
+    },
+    {
+      "id": "n6pjfezk4m",
+      "title": "O Capital",
+      "author": "Karl Marx",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 890
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Economia",
+        "subcategory": "Crítica da economia política / Marxismo",
+        "nature": "teórico",
+        "difficulty": 5,
+        "pages": 890,
+        "hours": 50,
+        "intro": "Obra principal de Marx. O Livro I, o único publicado em vida (1867), analisa o capitalismo a partir da mercadoria, do valor, do trabalho e da mais-valia. Dialoga criticamente com Adam Smith e David Ricardo e traz longos capítulos históricos sobre a jornada de trabalho e a chamada acumulação primitiva. O número de páginas indicado se refere ao Livro I na edição da Boitempo; versões resumidas ou outros volumes variam bastante. O leitor ganha uma compreensão de primeira mão da teoria que defensores e críticos do marxismo discutem até hoje.",
+        "why": "É a fonte direta da análise marxista do capitalismo e permite julgar a teoria sem intermediários.",
+        "themes": [
+          "Teoria do valor-trabalho",
+          "Mais-valia e exploração",
+          "Fetichismo da mercadoria",
+          "Acumulação de capital",
+          "História do trabalho industrial"
+        ],
+        "prerequisites": [
+          "Manifesto do Partido Comunista",
+          "Noções de economia clássica (Smith e Ricardo)",
+          "Noções básicas de dialética hegeliana"
+        ],
+        "related": [
+          "qcgq4rzk4m",
+          "u6j6qizk4m",
+          "yqszsezk4m",
+          "th168dzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:22.058Z"
+      },
+      "guide": null,
+      "userPhase": "Marxismo, comunismo e crítica histórica",
+      "priority": true,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:10.422Z"
+    },
+    {
+      "id": "byiq9azk4m",
+      "title": "Mitologia Soviética: Os Mitos Fundadores do Comunismo Russo",
+      "author": "",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 250
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "História",
+        "subcategory": "História da União Soviética / Ideologia comunista",
+        "nature": "misto",
+        "difficulty": 3,
+        "pages": 250,
+        "hours": 9,
+        "intro": "Pelo título, a obra examina os mitos e narrativas fundadoras que legitimaram o regime soviético, como a Revolução de Outubro, o culto aos líderes e a promessa do homem novo. Não consegui confirmar com segurança o autor nem a edição brasileira, então o número de páginas e a dificuldade são estimativas. Vale conferir a ficha catalográfica do exemplar físico. O leitor deve ganhar uma visão de como a ideologia comunista se transformou em símbolos, rituais e narrativas oficiais na Rússia.",
+        "why": "Ajuda a entender como uma teoria política virou mitologia de Estado na prática histórica.",
+        "themes": [
+          "Revolução Russa",
+          "Propaganda e mitos políticos",
+          "Culto à personalidade",
+          "Ideologia soviética"
+        ],
+        "prerequisites": [
+          "Manifesto do Partido Comunista",
+          "Noções da história da Rússia no século XX"
+        ],
+        "related": [
+          "qcgq4rzk4m",
+          "n6pjfezk4m",
+          "u6j6qizk4m",
+          "th168dzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:22.058Z"
+      },
+      "guide": null,
+      "userPhase": "Marxismo, comunismo e crítica histórica",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:28:56.574Z"
+    },
+    {
+      "id": "3x48nlzk4m",
+      "title": "Origens",
+      "author": "Neil deGrasse Tyson e Donald Goldsmith",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 380
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Ciência",
+        "subcategory": "Astrofísica e Cosmologia",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 380,
+        "hours": 12,
+        "intro": "Publicado em 2004 como companheiro de uma série de TV da PBS, o livro narra cerca de 14 bilhões de anos de evolução cósmica. Começa no Big Bang e passa pela formação de galáxias, estrelas e planetas até a origem da vida e a busca por vida fora da Terra. Tyson, astrofísico e divulgador, escreve em parceria com o escritor de ciência Goldsmith. O leitor ganha uma visão integrada e acessível do que a ciência atual sabe sobre de onde viemos.",
+        "why": "Oferece em linguagem acessível um panorama completo da história do universo, do Big Bang à vida.",
+        "themes": [
+          "Big Bang",
+          "Formação de galáxias e estrelas",
+          "Origem dos planetas",
+          "Origem da vida",
+          "Astrobiologia"
+        ],
+        "prerequisites": [],
+        "related": [
+          "gz9ma1zk4m",
+          "1plhb3zk4m",
+          "4ela4kzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:22.058Z"
+      },
+      "guide": null,
+      "userPhase": "Ciência e conhecimento",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:12.857Z"
+    },
+    {
+      "id": "gz9ma1zk4m",
+      "title": "O Maior Espetáculo da Terra",
+      "author": "Richard Dawkins",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 440
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Ciência",
+        "subcategory": "Biologia evolutiva",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 440,
+        "hours": 15,
+        "intro": "Publicado em 2009, no bicentenário de Darwin, o livro reúne as evidências a favor da evolução: fósseis, seleção artificial, anatomia comparada, genética molecular, distribuição geográfica das espécies e datação. Dawkins, biólogo de Oxford, escreve também em resposta ao criacionismo, o que dá à obra um tom polêmico em alguns trechos. A edição brasileira é da Companhia das Letras. O leitor sai com uma compreensão sólida de como a ciência sustenta a teoria da evolução.",
+        "why": "Reúne de forma didática as principais evidências científicas da evolução em um só volume.",
+        "themes": [
+          "Seleção natural",
+          "Registro fóssil",
+          "Genética e ancestralidade comum",
+          "Tempo geológico",
+          "Debate com o criacionismo"
+        ],
+        "prerequisites": [
+          "Noções básicas de biologia"
+        ],
+        "related": [
+          "3x48nlzk4m",
+          "1plhb3zk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:22.058Z"
+      },
+      "guide": null,
+      "userPhase": "Ciência e conhecimento",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:12.858Z"
+    },
+    {
+      "id": "g5ggdvzk4m",
+      "title": "A Morte de Ivan Ilitch",
+      "author": "Liev Tolstói",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 96
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Literatura",
+        "subcategory": "Novela russa",
+        "nature": "narrativo",
+        "difficulty": 2,
+        "pages": 96,
+        "hours": 3,
+        "intro": "Novela de 1886 sobre Ivan Ilitch, juiz bem-sucedido e convencional que, diante de uma doença fatal, percebe que viveu de aparências. Tolstói a escreveu depois da crise espiritual que marcou sua obra tardia. A obra condensa reflexões sobre a morte, a autenticidade e o sentido da vida em poucas páginas. No Brasil, a tradução de Boris Schnaiderman (Editora 34) é a mais conhecida.",
+        "why": "Em poucas páginas, faz o leitor examinar se está vivendo de forma autêntica.",
+        "themes": [
+          "finitude e morte",
+          "autenticidade",
+          "hipocrisia social",
+          "sentido da vida",
+          "compaixão"
+        ],
+        "prerequisites": [],
+        "related": [
+          "x857q8zk4m",
+          "fcllpqzk4m",
+          "mrcyzfzk4m",
+          "349mn1zk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:58.702Z"
+      },
+      "guide": null,
+      "userPhase": "Literatura e poesia",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:13.427Z"
+    },
+    {
+      "id": "349mn1zk4m",
+      "title": "O Alienista",
+      "author": "Machado de Assis",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 100
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Literatura",
+        "subcategory": "Novela brasileira / sátira",
+        "nature": "narrativo",
+        "difficulty": 2,
+        "pages": 96,
+        "hours": 2,
+        "intro": "Novela publicada em 1882, em que o médico Simão Bacamarte funda um hospício na vila de Itaguaí e passa a internar quase toda a população em nome da ciência. Machado usa a ironia para satirizar o cientificismo, a vaidade intelectual e as disputas de poder locais. É um dos textos mais lidos da fase madura do autor.",
+        "why": "Uma sátira breve e afiada sobre os limites da razão e o abuso de autoridade em nome da ciência.",
+        "themes": [
+          "razão e loucura",
+          "cientificismo",
+          "poder e autoridade",
+          "ironia social",
+          "normalidade"
+        ],
+        "prerequisites": [],
+        "related": [
+          "as9jgzzk4m",
+          "mb7kf1zk4m",
+          "0zk6vrzk4m",
+          "g5ggdvzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:58.702Z"
+      },
+      "guide": null,
+      "userPhase": "Literatura e poesia",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:13.137Z"
+    },
+    {
+      "id": "0zk6vrzk4m",
+      "title": "Laranja Mecânica",
+      "author": "Anthony Burgess",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 220
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Literatura",
+        "subcategory": "Romance distópico britânico",
+        "nature": "narrativo",
+        "difficulty": 3,
+        "pages": 220,
+        "hours": 7,
+        "intro": "Romance de 1962 narrado por Alex, jovem violento que é submetido pelo Estado a um tratamento de condicionamento para eliminar seu impulso ao mal. Burgess inventou o 'nadsat', gíria misturada com palavras russas, o que exige adaptação no início da leitura. O livro discute se uma bondade imposta tem valor moral. A edição brasileira mais comum é a da Aleph, com tradução de Fábio Fernandes.",
+        "why": "Provoca uma reflexão difícil sobre livre-arbítrio e sobre os limites do Estado na correção do indivíduo.",
+        "themes": [
+          "livre-arbítrio",
+          "violência",
+          "condicionamento e controle estatal",
+          "responsabilidade moral",
+          "juventude"
+        ],
+        "prerequisites": [],
+        "related": [
+          "349mn1zk4m",
+          "th168dzk4m",
+          "mrcyzfzk4m",
+          "ze4qkbzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:58.702Z"
+      },
+      "guide": null,
+      "userPhase": "Literatura e poesia",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:14.022Z"
+    },
+    {
+      "id": "4ela4kzk4m",
+      "title": "O Guia do Mochileiro das Galáxias",
+      "author": "Douglas Adams",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 208
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Literatura",
+        "subcategory": "Ficção científica humorística",
+        "nature": "narrativo",
+        "difficulty": 1,
+        "pages": 208,
+        "hours": 5,
+        "intro": "Primeiro volume da série, publicado em 1979 a partir de uma radionovela da BBC. Arthur Dent escapa da demolição da Terra e viaja pela galáxia com o alienígena Ford Prefect. Por trás do humor absurdo há sátira à burocracia, à pretensão humana e à busca pelo sentido da vida, famosamente respondida com '42'.",
+        "why": "Uma leitura divertida e rápida que zomba das grandes perguntas sem deixar de levá-las a sério.",
+        "themes": [
+          "humor absurdo",
+          "sentido da vida",
+          "burocracia",
+          "acaso e cosmos",
+          "sátira social"
+        ],
+        "prerequisites": [],
+        "related": [
+          "3x48nlzk4m",
+          "gz9ma1zk4m",
+          "qq5nwlzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:58.702Z"
+      },
+      "guide": null,
+      "userPhase": "Literatura e poesia",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:14.181Z"
+    },
+    {
+      "id": "luxo5zzk4m",
+      "title": "Toda Poesia",
+      "author": "Paulo Leminski",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "lido",
+      "progress": {
+        "current": 424,
+        "total": 424
+      },
+      "rating": 4,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Poesia",
+        "subcategory": "Poesia brasileira contemporânea",
+        "nature": "misto",
+        "difficulty": 2,
+        "pages": 424,
+        "hours": 8,
+        "intro": "Reunião da obra poética do curitibano Paulo Leminski (1944–1989), lançada pela Companhia das Letras em 2013 e grande sucesso de vendas. Leminski mistura a precisão da poesia concreta e do haicai japonês com o humor, a gíria e a cultura pop. Os poemas são em geral curtos e acessíveis, mas cheios de jogos de linguagem.",
+        "why": "Mostra que a poesia pode ser inteligente, concisa e bem-humorada ao mesmo tempo.",
+        "themes": [
+          "linguagem e trocadilho",
+          "haicai",
+          "poesia concreta",
+          "cotidiano",
+          "humor"
+        ],
+        "prerequisites": [],
+        "related": [
+          "05ex9azk4m",
+          "l9q1brzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:58.702Z"
+      },
+      "guide": null,
+      "userPhase": "Literatura e poesia",
+      "priority": false,
+      "startedAt": "2026-11-09",
+      "finishedAt": "2026-11-09",
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:27:13.679Z"
+    },
+    {
+      "id": "05ex9azk4m",
+      "title": "Poesia Reunida — Volume 2",
+      "author": "Afonso Romano de Sant'Anna",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "quero_ler",
+      "progress": {
+        "current": 0,
+        "total": 300
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Poesia",
+        "subcategory": "Poesia brasileira contemporânea",
+        "nature": "misto",
+        "difficulty": 2,
+        "pages": 300,
+        "hours": 6,
+        "intro": "Segundo volume da poesia reunida de Affonso Romano de Sant'Anna (1937–2025), poeta, cronista e crítico literário mineiro (a grafia correta é 'Affonso', com dois 'f'). Sua poesia é conhecida pelo diálogo com a história e a política brasileira, como no poema 'Que país é este?', escrito durante a ditadura, e também pela lírica amorosa e existencial. O número de páginas e o conteúdo exato deste volume variam conforme a edição; não tenho certeza sobre os dados precisos.",
+        "why": "Oferece um retrato poético do Brasil e de suas tensões sociais na segunda metade do século XX.",
+        "themes": [
+          "Brasil e identidade nacional",
+          "crítica social e política",
+          "memória",
+          "amor",
+          "existência"
+        ],
+        "prerequisites": [
+          "Poesia Reunida — Volume 1, do mesmo autor (opcional)"
+        ],
+        "related": [
+          "luxo5zzk4m",
+          "l9q1brzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T01:58:58.702Z"
+      },
+      "guide": null,
+      "userPhase": "Literatura e poesia",
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "createdAt": "2026-11-09T01:55:05.254Z",
+      "updatedAt": "2026-11-09T02:30:08.401Z"
+    },
+    {
+      "id": "fn5uvnk43g",
+      "title": "A abolição do homem",
+      "author": "C.S. Lewis",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "lendo",
+      "progress": {
+        "current": 20,
+        "total": 128
+      },
+      "rating": 0,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Filosofia",
+        "subcategory": "Ética e filosofia da educação",
+        "nature": "teórico",
+        "difficulty": 3,
+        "pages": 110,
+        "hours": 4,
+        "intro": "Publicado em 1943 a partir de três conferências que Lewis proferiu na Universidade de Durham, o livro parte da crítica a um manual escolar de inglês para defender que existem valores objetivos. Lewis chama esses valores de 'Tao', ou lei natural, e mostra que são reconhecidos por diversas tradições morais. Ele argumenta que uma educação que reduz juízos de valor a meros sentimentos subjetivos forma 'homens sem peito' e, no limite, entrega a natureza humana ao controle de condicionadores. O leitor ganha um argumento curto e denso sobre a relação entre razão, emoção, moral e o poder da técnica sobre o homem.",
+        "why": "É um clássico breve sobre por que a educação moral e a ideia de valores objetivos importam numa era técnica.",
+        "themes": [
+          "Lei natural e valores objetivos",
+          "Educação das emoções",
+          "Subjetivismo e relativismo moral",
+          "Ciência, técnica e poder sobre a natureza humana",
+          "Crítica ao reducionismo"
+        ],
+        "prerequisites": [
+          "Noções básicas de ética clássica, como Platão e Aristóteles (opcional)"
+        ],
+        "related": [
+          "mrcyzfzk4m",
+          "as9jgzzk4m",
+          "fcllpqzk4m",
+          "0zk6vrzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T02:39:16.235Z"
+      },
+      "guide": null,
+      "userPhase": null,
+      "priority": false,
+      "startedAt": "2026-11-09",
+      "finishedAt": null,
+      "createdAt": "2026-11-09T02:39:03.868Z",
+      "updatedAt": "2026-11-09T02:39:56.814Z"
+    },
+    {
+      "id": "1mv723kjho",
+      "title": "Esquerda & Direita: Perspectivas para a liberdade",
+      "author": "Murray Rothbard",
+      "format": "fisico",
+      "ownership": "tenho",
+      "status": "lido",
+      "progress": {
+        "current": 80,
+        "total": 80
+      },
+      "rating": 5,
+      "cover": null,
+      "coverTried": false,
+      "notes": {},
+      "purchase": {},
+      "sale": {},
+      "loan": {},
+      "ai": {
+        "category": "Política",
+        "subcategory": "Libertarianismo / Escola Austríaca",
+        "nature": "teórico",
+        "difficulty": 2,
+        "pages": 80,
+        "hours": 2,
+        "intro": "Ensaio publicado por Rothbard em 1965, no primeiro número da revista Left and Right, que ele mesmo fundou. O autor relê a história política moderna e defende que o liberalismo clássico nasceu como movimento radical, de 'esquerda', contra o Antigo Regime. Nessa leitura, o conservadorismo seria a reação a favor da velha ordem, e o socialismo uma posição intermediária e confusa, que busca fins liberais por meios estatistas. O leitor ganha uma visão provocadora e pouco convencional do espectro político, além de compreender a estratégia de aproximação de Rothbard com a Nova Esquerda antiguerra dos anos 1960.",
+        "why": "Para questionar o eixo esquerda-direita tradicional pela ótica de um dos principais teóricos do libertarianismo.",
+        "themes": [
+          "espectro político esquerda-direita",
+          "liberalismo clássico como movimento revolucionário",
+          "crítica ao conservadorismo e ao socialismo",
+          "estratégia e futuro do movimento libertário",
+          "Estado, guerra e liberdade"
+        ],
+        "prerequisites": [
+          "noções básicas de história política dos séculos XVIII e XIX",
+          "Anatomia do Estado (Rothbard), como introdução à visão do autor sobre o Estado"
+        ],
+        "related": [
+          "ze4qkbzk4m",
+          "65s89azk4m",
+          "c2dbhszk4m",
+          "qcgq4rzk4m"
+        ],
+        "provider": "Claude Code",
+        "classifiedAt": "2026-11-09T02:39:36.679Z"
+      },
+      "guide": null,
+      "userPhase": null,
+      "priority": false,
+      "startedAt": null,
+      "finishedAt": "2026-11-09",
+      "createdAt": "2026-11-09T02:39:23.820Z",
+      "updatedAt": "2026-11-09T02:39:41.669Z"
+    }
+  ],
+  "plan": {
+    "summary": "O plano começa terminando o que você já está lendo (Como Ler Livros e A Abolição do Homem). Depois segue uma progressão: método e lógica, clássicos gregos, pensamento helenístico e cristão, síntese filosófica, ciência e, por fim, política e economia. Em relação ao plano original, há três mudanças principais. Meditações passou para junto da Ética a Nicômaco, porque as duas tratam de virtude. O bloco sobre Marx agora vem antes do bloco de economia liberal, e Análise Dialética do Marxismo foi para depois de O Capital, para que os clássicos sejam lidos antes de seus críticos; como você já leu Rothbard, isso também equilibra as perspectivas. Cada fase combina um livro denso com uma leitura leve que conversa com o tema. No ritmo de 45 minutos por dia (cerca de 5 horas por semana), o total fica em torno de 68 semanas, menos se parte dos livros leves for ouvida em audiobook. Todos os títulos estão em formato físico e nenhum está marcado como ainda não comprado.",
+    "provider": "Claude Code",
+    "source": "ia",
+    "generatedAt": "2026-11-09T02:42:45.903Z",
+    "phases": [
+      {
+        "name": "Método e base",
+        "goal": "Concluir as leituras em andamento, aprender a ler e estudar com método e ter um mapa geral da história da filosofia.",
+        "weeks": 6,
+        "books": [
+          {
+            "id": "svu5g3zk4m",
+            "reason": "Já em leitura e é a base de método para tudo o que vem depois."
+          },
+          {
+            "id": "fn5uvnk43g",
+            "reason": "Já em leitura e é curto. Introduz o tema da formação moral, que volta em Platão e Aristóteles."
+          },
+          {
+            "id": "qq5nwlzk4m",
+            "reason": "É o livro mais acessível do bloco filosófico e dá uma linha do tempo para situar cada autor que você vai ler."
+          },
+          {
+            "id": "kynxcnzk4m",
+            "reason": "Depois de saber como ler, Sertillanges ajuda a organizar rotina, disciplina e anotações para uma vida de estudo de longo prazo."
+          },
+          {
+            "id": "4ela4kzk4m",
+            "reason": "Leitura leve e bem-humorada para alternar com os livros de método, de preferência em áudio."
+          }
+        ]
+      },
+      {
+        "name": "Lógica e argumentação",
+        "goal": "Desenvolver raciocínio correto, domínio da linguagem e capacidade de reconhecer truques retóricos.",
+        "weeks": 7,
+        "books": [
+          {
+            "id": "3l5b0mzk4m",
+            "reason": "Balmes trata a lógica de forma prática, como bom senso aplicado, e por isso é uma boa porta de entrada antes do Trivium."
+          },
+          {
+            "id": "l9q1brzk4m",
+            "reason": "É o livro principal da fase: sistematiza lógica, gramática e retórica, ferramentas que você vai usar diretamente nos diálogos de Platão."
+          },
+          {
+            "id": "xgi5zkzk4m",
+            "reason": "Fica por último porque os estratagemas de Schopenhauer ficam mais claros quando você já conhece a argumentação correta que eles distorcem."
+          },
+          {
+            "id": "05ex9azk4m",
+            "reason": "Poesia em doses curtas para alternar com o Trivium, permitindo observar na prática as figuras de linguagem que ele estuda."
+          }
+        ]
+      },
+      {
+        "name": "Sócrates e Platão",
+        "goal": "Conhecer o método socrático e as grandes perguntas de Platão sobre virtude, retórica e conhecimento.",
+        "weeks": 8,
+        "books": [
+          {
+            "id": "gt7o02zk4m",
+            "reason": "Reúne diálogos mais curtos e de juventude, como o Eutífron, que são a melhor entrada no estilo socrático."
+          },
+          {
+            "id": "4jzngqzk4m",
+            "reason": "O Górgias discute retórica e ética e dialoga diretamente com o que você leu no Trivium e em Schopenhauer."
+          },
+          {
+            "id": "wmxslczk4m",
+            "reason": "Teeteto e Sofista são os diálogos mais técnicos sobre conhecimento e ser, por isso ficam para quando você já estiver habituado a Platão."
+          },
+          {
+            "id": "349mn1zk4m",
+            "reason": "Sátira curta sobre a certeza científica e o poder de quem se considera sábio. É um contraponto leve e irônico às discussões sobre conhecimento."
+          }
+        ]
+      },
+      {
+        "name": "Justiça e virtude",
+        "goal": "Comparar as duas grandes éticas clássicas, a platônica e a aristotélica, e sua aplicação prática no estoicismo.",
+        "weeks": 8,
+        "books": [
+          {
+            "id": "as9jgzzk4m",
+            "reason": "Obra central de Platão, lida depois dos diálogos menores, quando o método e os temas já são familiares."
+          },
+          {
+            "id": "mrcyzfzk4m",
+            "reason": "Aristóteles responde em parte a Platão, então lê-lo logo em seguida torna as diferenças entre os dois mais visíveis."
+          },
+          {
+            "id": "x857q8zk4m",
+            "reason": "Foi trazido da fase helenística para cá: é leve e prático, e mostra a ética da virtude vivida no cotidiano, em paralelo à Ética a Nicômaco."
+          }
+        ]
+      },
+      {
+        "name": "Interioridade e síntese",
+        "goal": "Passar da filosofia antiga para a interioridade cristã e, depois, consolidar o que foi lido a partir de problemas e de uma visão de conjunto.",
+        "weeks": 7,
+        "books": [
+          {
+            "id": "fcllpqzk4m",
+            "reason": "Agostinho une a herança platônica à fé cristã e marca a transição do mundo antigo para o medieval."
+          },
+          {
+            "id": "g5ggdvzk4m",
+            "reason": "Novela curta sobre a morte e o sentido da vida, que conversa bem com as Confissões e com Marco Aurélio."
+          },
+          {
+            "id": "s8km9fzk4m",
+            "reason": "Depois dos clássicos, Porta ajuda a reorganizar a filosofia a partir de problemas, e não apenas de autores."
+          },
+          {
+            "id": "1plhb3zk4m",
+            "reason": "Mário Ferreira dos Santos oferece uma síntese de visão de mundo, que rende mais quando você já conhece a tradição que ele discute."
+          }
+        ]
+      },
+      {
+        "name": "Ciência e cosmos",
+        "goal": "Entender o que a ciência atual diz sobre a origem do universo e da vida, um contraponto empírico às cosmovisões filosóficas.",
+        "weeks": 5,
+        "books": [
+          {
+            "id": "3x48nlzk4m",
+            "reason": "Começa pela escala maior, a origem do universo, e faz uma boa transição a partir de Filosofia e Cosmovisão."
+          },
+          {
+            "id": "gz9ma1zk4m",
+            "reason": "Em seguida, a origem e a evolução da vida, apresentadas pelas evidências da biologia evolutiva."
+          }
+        ]
+      },
+      {
+        "name": "Poder, lei e Estado",
+        "goal": "Ler textos curtos e fundadores sobre poder e Estado, com visões opostas lado a lado.",
+        "weeks": 3,
+        "books": [
+          {
+            "id": "mb7kf1zk4m",
+            "reason": "Começa pelo realismo político de Maquiavel, base de muitas discussões modernas sobre poder."
+          },
+          {
+            "id": "fnpe8dzk4m",
+            "reason": "É curto e prático, ideal como leve ou audiobook, e amplia a ideia de estratégia para além da Europa."
+          },
+          {
+            "id": "c2dbhszk4m",
+            "reason": "Bastiat retoma a crítica ao Estado que você já conhece de Rothbard, mas pela tradição liberal clássica."
+          },
+          {
+            "id": "qcgq4rzk4m",
+            "reason": "Publicado quase na mesma época que A Lei, apresenta a visão oposta e abre o bloco sobre o marxismo."
+          }
+        ]
+      },
+      {
+        "name": "Marx e seus críticos",
+        "goal": "Ler Marx diretamente, conhecer a experiência histórica soviética e só depois uma crítica filosófica sistemática.",
+        "weeks": 15,
+        "books": [
+          {
+            "id": "n6pjfezk4m",
+            "reason": "É o livro principal e mais denso de todo o plano. Lido logo após o Manifesto, permite conhecer o argumento de Marx antes das críticas. Se a sua edição tiver vários livros, vale priorizar o Livro I."
+          },
+          {
+            "id": "0zk6vrzk4m",
+            "reason": "É o romance leve da fase. Trata de controle social e livre-arbítrio, e a gíria dos personagens usa muitas palavras de origem russa."
+          },
+          {
+            "id": "byiq9azk4m",
+            "reason": "Mostra como a ideologia virou mitos fundadores na história concreta da URSS, depois que você já conhece a teoria."
+          },
+          {
+            "id": "u6j6qizk4m",
+            "reason": "Foi movido da fase de filosofia brasileira para cá: a crítica de Mário Ferreira dos Santos rende muito mais depois de ler O Capital."
+          }
+        ]
+      },
+      {
+        "name": "Economia e liberdade",
+        "goal": "Consolidar a economia de mercado em suas principais vertentes (austríaca, Chicago e libertária) e terminar com sua aplicação prática.",
+        "weeks": 9,
+        "books": [
+          {
+            "id": "yqszsezk4m",
+            "reason": "Hazlitt explica os fundamentos da economia de forma simples e serve de base para os demais livros da fase."
+          },
+          {
+            "id": "th168dzk4m",
+            "reason": "Hayek critica o planejamento central e dialoga diretamente com o que você acabou de ler sobre Marx e a URSS."
+          },
+          {
+            "id": "kv4b0jzk4m",
+            "reason": "Friedman apresenta a visão da Escola de Chicago, mais moderada, e diferente da austríaca em pontos como a política monetária."
+          },
+          {
+            "id": "65s89azk4m",
+            "reason": "É a versão mais completa do pensamento de Rothbard, que você já conhece pelos livros curtos. Fica bem no fim do bloco teórico."
+          },
+          {
+            "id": "qv4d8kzk4m",
+            "reason": "Leitura prática para alternar com os livros teóricos e encerrar o plano aplicando ideias de mercado aos investimentos."
+          }
+        ]
+      }
+    ],
+    "now": [
+      {
+        "id": "svu5g3zk4m",
+        "reason": "Você já está lendo, e o método de Adler (leitura inspecional e analítica, anotações, perguntas ao texto) vai servir para todos os livros densos do plano.",
+        "role": "principal"
+      },
+      {
+        "id": "fn5uvnk43g",
+        "reason": "Também está em andamento e é curto (cerca de 4h). Terminá-lo logo libera espaço, e sua discussão sobre valores objetivos e educação moral prepara o terreno para Platão e Aristóteles.",
+        "role": "paralelo"
+      },
+      {
+        "id": "4ela4kzk4m",
+        "reason": "É o livro mais leve da primeira fase e funciona bem no trânsito ou na academia. Existem versões em áudio em inglês; não sei se há em português, então vale verificar. Se não encontrar, leia a edição física como leitura leve.",
+        "role": "audiobook"
+      }
+    ],
+    "parallel": [
+      {
+        "reason": "Enquanto o Trivium ensina gramática e retórica, os poemas mostram essas mesmas figuras de linguagem em uso. Os poemas também são curtos, bons para os dias de pouca energia.",
+        "ids": [
+          "l9q1brzk4m",
+          "05ex9azk4m"
+        ]
+      },
+      {
+        "reason": "Dois olhares sobre a virtude: a análise sistemática de Aristóteles e as anotações pessoais de Marco Aurélio, que se leem em pequenas doses.",
+        "ids": [
+          "mrcyzfzk4m",
+          "x857q8zk4m"
+        ]
+      },
+      {
+        "reason": "Os dois tratam de morte, conversão e sentido da vida: um em forma de autobiografia espiritual, o outro em uma narrativa curta e intensa.",
+        "ids": [
+          "fcllpqzk4m",
+          "g5ggdvzk4m"
+        ]
+      },
+      {
+        "reason": "O contraste de ritmo é grande e ajuda a não travar em O Capital. Além disso, o romance também discute Estado, controle e liberdade individual.",
+        "ids": [
+          "n6pjfezk4m",
+          "0zk6vrzk4m"
+        ]
+      },
+      {
+        "reason": "São textos curtos, quase contemporâneos e com visões opostas sobre lei, Estado e propriedade. Dá para lê-los em poucos dias, um depois do outro.",
+        "ids": [
+          "c2dbhszk4m",
+          "qcgq4rzk4m"
+        ]
+      },
+      {
+        "reason": "Teeteto pergunta o que é conhecimento, e O Alienista mostra com humor o que acontece quando alguém tem certeza demais de que sabe.",
+        "ids": [
+          "wmxslczk4m",
+          "349mn1zk4m"
+        ]
+      }
+    ],
+    "routine": [
+      "Divida os 45 minutos em cerca de 30 minutos para o livro principal e 15 para o leve. Nos dias cansativos, use os 45 minutos inteiros só no leve, para não quebrar o hábito.",
+      "Aplique o que está aprendendo em Como Ler Livros: antes de começar cada obra densa, faça uma leitura inspecional rápida (sumário, introdução, conclusões). Ao terminar, escreva um parágrafo com a tese central do livro.",
+      "Reserve os audiobooks para livros narrativos, de divulgação científica ou curtos e práticos, como Mochileiro, A Arte da Guerra, Meditações e Jeito Warren Buffett. Evite em áudio o Trivium, Teeteto/Sofista e O Capital, que pedem releitura e anotação. Como todos os seus livros são físicos, confirme antes se existe versão em áudio de cada um.",
+      "Na fase de O Capital, defina uma meta fixa e pequena, como um número de páginas ou um capítulo por sessão, e mantenha sempre um livro leve ao lado. Se travar em alguma seção, siga em frente e anote para voltar depois.",
+      "No fim de cada fase, reserve uma sessão para revisar suas anotações e ligar os livros entre si, por exemplo Platão e Aristóteles, ou Marx e Hayek. Isso consolida o conhecimento e mostra se vale ajustar a fase seguinte."
+    ]
+  },
+  "suggestions": {
+    "summary": "A biblioteca tem uma base sólida em método de estudo, clássicos gregos e liberalismo de matriz austríaca e libertária, e já inclui Marx como fonte primária. As maiores lacunas são obras de apoio para os livros mais densos (O Capital, os diálogos de Platão), contrapontos ao liberalismo econômico vindos de outras tradições e autores da filosofia política moderna entre Maquiavel e Hayek. Há também espaço para literatura e divulgação científica que dialoguem com os temas de política e pensamento crítico.",
+    "items": [
+      {
+        "title": "O que é a filosofia antiga?",
+        "author": "Pierre Hadot",
+        "category": "Filosofia",
+        "nature": "teórico",
+        "kind": "base",
+        "priority": 1,
+        "why": "Hadot mostra que a filosofia antiga era também um modo de vida e um exercício espiritual, o que liga Platão, Aristóteles, os estoicos e o início do pensamento cristão num só percurso. Ler antes ou junto dos diálogos ajuda a entender o propósito de cada texto, e não só os argumentos. Há edição brasileira pela Loyola.",
+        "complements": [
+          "as9jgzzk4m",
+          "x857q8zk4m",
+          "fcllpqzk4m"
+        ]
+      },
+      {
+        "title": "Para Entender O Capital (Livro I)",
+        "author": "David Harvey",
+        "category": "Economia",
+        "nature": "teórico",
+        "kind": "base",
+        "priority": 1,
+        "why": "É um guia capítulo a capítulo do Livro I de O Capital, escrito por um dos principais estudiosos marxistas, e torna administrável uma leitura de cerca de 50 horas e dificuldade máxima. Também dá ao leitor uma compreensão de primeira mão para avaliar críticas como a de Mário Ferreira dos Santos. Há edição brasileira pela Boitempo.",
+        "complements": [
+          "n6pjfezk4m",
+          "qcgq4rzk4m",
+          "u6j6qizk4m"
+        ]
+      },
+      {
+        "title": "Justiça: o que é fazer a coisa certa",
+        "author": "Michael J. Sandel",
+        "category": "Filosofia",
+        "nature": "misto",
+        "kind": "contraponto",
+        "priority": 1,
+        "why": "Sandel apresenta de forma acessível o utilitarismo, o libertarianismo (Nozick), o liberalismo igualitário (Rawls) e a ética aristotélica, e defende uma posição comunitarista própria. É uma boa forma de testar as convicções formadas com Rothbard e Hayek diante de alternativas apresentadas com seriedade. Há edição brasileira pela Civilização Brasileira.",
+        "complements": [
+          "65s89azk4m",
+          "mrcyzfzk4m",
+          "fn5uvnk43g"
+        ]
+      },
+      {
+        "title": "A Grande Transformação",
+        "author": "Karl Polanyi",
+        "category": "Economia",
+        "nature": "teórico",
+        "kind": "contraponto",
+        "priority": 1,
+        "why": "Publicado em 1944, o mesmo ano de O Caminho da Servidão, o livro argumenta que o mercado autorregulado foi uma construção histórica sustentada pelo Estado e que gerou reações sociais inevitáveis. É provavelmente o contraponto histórico-econômico mais direto à tese de Hayek. Há edição brasileira pela Campus/Elsevier.",
+        "complements": [
+          "th168dzk4m",
+          "yqszsezk4m",
+          "65s89azk4m"
+        ]
+      },
+      {
+        "title": "A História do Pensamento Econômico (Os Filósofos Mundanos)",
+        "author": "Robert L. Heilbroner",
+        "category": "Economia",
+        "nature": "misto",
+        "kind": "base",
+        "priority": 2,
+        "why": "É um panorama narrativo e envolvente de Adam Smith, Malthus, Ricardo, Marx, Keynes, Schumpeter e outros, que situa cada escola no seu contexto histórico. Funciona como um mapa para conectar Hazlitt, Friedman, Hayek e Marx, que hoje aparecem isolados na biblioteca. Saiu no Brasil pela Nova Cultural; vale conferir a disponibilidade, porque edições anteriores podem estar esgotadas.",
+        "complements": [
+          "yqszsezk4m",
+          "kv4b0jzk4m",
+          "n6pjfezk4m"
+        ]
+      },
+      {
+        "title": "Política",
+        "author": "Aristóteles",
+        "category": "Filosofia",
+        "nature": "teórico",
+        "kind": "aprofundar",
+        "priority": 2,
+        "why": "O próprio Aristóteles apresenta a Política como continuação da Ética a Nicômaco, e o livro critica diretamente a cidade ideal da República de Platão. Completa o bloco grego e oferece uma teoria clássica dos regimes, útil para ler Maquiavel e os liberais modernos. Há várias edições brasileiras, como as da Edipro e da Martins Fontes.",
+        "complements": [
+          "mrcyzfzk4m",
+          "as9jgzzk4m",
+          "mb7kf1zk4m"
+        ]
+      },
+      {
+        "title": "A Democracia na América",
+        "author": "Alexis de Tocqueville",
+        "category": "Política",
+        "nature": "teórico",
+        "kind": "aprofundar",
+        "priority": 2,
+        "why": "Tocqueville analisa a liberdade, as associações civis, a 'tirania da maioria' e a tendência à centralização do poder, temas que preenchem a lacuna entre Maquiavel e os liberais do século XX. Sua leitura é valorizada tanto por liberais quanto por conservadores e enriquece as discussões de Bastiat e Hayek. Há edição brasileira em dois volumes pela Martins Fontes.",
+        "complements": [
+          "c2dbhszk4m",
+          "th168dzk4m",
+          "ze4qkbzk4m"
+        ]
+      },
+      {
+        "title": "O Investidor Inteligente",
+        "author": "Benjamin Graham",
+        "category": "Investimentos e Negócios",
+        "nature": "prático",
+        "kind": "aprofundar",
+        "priority": 2,
+        "why": "É a obra-fonte do value investing, escrita pelo mentor de Warren Buffett, e traz conceitos como margem de segurança e a parábola do 'Sr. Mercado'. Ler a fonte original dá base sólida ao que Hagstrom apresenta de forma derivada. A edição brasileira da HarperCollins inclui comentários atualizados de Jason Zweig.",
+        "complements": [
+          "qv4d8kzk4m",
+          "yqszsezk4m"
+        ]
+      },
+      {
+        "title": "Os Demônios",
+        "author": "Fiódor Dostoiévski",
+        "category": "Literatura",
+        "nature": "narrativo",
+        "kind": "lazer",
+        "priority": 2,
+        "why": "O romance retrata uma célula revolucionária na Rússia do século XIX e examina como ideias radicais podem levar à violência e ao niilismo. Conversa de modo literário com a fase sobre marxismo e mitologia soviética, e com Tolstói, que o leitor já tem. Há tradução direta do russo por Paulo Bezerra pela Editora 34.",
+        "complements": [
+          "byiq9azk4m",
+          "qcgq4rzk4m",
+          "g5ggdvzk4m"
+        ]
+      },
+      {
+        "title": "O Mundo Assombrado pelos Demônios",
+        "author": "Carl Sagan",
+        "category": "Ciência",
+        "nature": "misto",
+        "kind": "lazer",
+        "priority": 3,
+        "why": "Sagan defende o ceticismo científico e apresenta um 'kit de detecção de mentiras' para identificar falácias e pseudociência. Une a fase de lógica e argumentação à de ciência, e combina bem com Balmes, Schopenhauer, Tyson e Dawkins. Há edição brasileira pela Companhia das Letras.",
+        "complements": [
+          "3l5b0mzk4m",
+          "xgi5zkzk4m",
+          "3x48nlzk4m"
+        ]
+      }
+    ],
+    "provider": "Claude Code",
+    "generatedAt": "2026-11-09T02:41:21.454Z"
+  }
+}

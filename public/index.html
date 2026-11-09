@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Marginália</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#f5f0e8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15120f" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Marginália">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#estante" aria-label="Marginália">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="6" width="6" height="20" rx="1.5"/><rect x="13" y="4" width="6" height="22" rx="1.5"/><rect x="21.5" y="7" width="5.5" height="19" rx="1.5" transform="rotate(8 24 16)"/></svg>
+      <span>Marginália</span>
+    </a>
+    <nav class="tabs" aria-label="Seções">
+      <a href="#estante" data-view="estante">Estante</a>
+      <a href="#plano" data-view="plano">Plano</a>
+      <a href="#descobrir" data-view="descobrir">Descobrir</a>
+    </nav>
+    <div class="top-actions">
+      <button class="ai-pill" data-action="open-settings" title="Provedor de IA"><span class="dot"></span><span class="ai-name">IA</span></button>
+      <button class="icon-btn" data-action="toggle-theme" title="Alternar tema" aria-label="Alternar tema"></button>
+      <button class="icon-btn" data-action="open-settings" title="Ajustes" aria-label="Ajustes"></button>
+      <button class="btn primary" data-action="open-add"><span class="i-plus"></span><span class="hide-sm">Livro</span></button>
+    </div>
+  </header>
+
+  <main id="view" tabindex="-1"></main>
+
+  <aside id="drawer" class="drawer" aria-hidden="true" inert></aside>
+  <div id="scrim" class="scrim" data-action="close-overlays"></div>
+  <dialog id="modal" class="modal"></dialog>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

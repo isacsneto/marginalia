@@ -1,0 +1,25 @@
+{
+  "name": "marginalia",
+  "version": "1.0.0",
+  "description": "Self-hosted AI reading tracker: physical books, e-books and audiobooks, automatic classification, reading plan, reading guides, next-book suggestions and covers, with Claude, Codex or Cursor.",
+  "type": "module",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "demo": "node scripts/demo.mjs",
+    "demo:reset": "node scripts/demo.mjs --reset",
+    "local:install": "node scripts/service.mjs install",
+    "local:stop": "node scripts/service.mjs stop",
+    "local:uninstall": "node scripts/service.mjs uninstall"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "openai": "^7.53.0"
+  },
+  "license": "MIT"
+}
