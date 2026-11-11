@@ -46,6 +46,7 @@ const ICONS = {
   layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   shelf: '<path d="M3 21h18M5 21V5M9 21V3M13 21V6M17 21l2.5-14"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
 };
 const icon = (n) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
@@ -72,12 +73,35 @@ function newBook(p = {}) {
   return {
     id: uid(), title: '', author: '', format: 'fisico', ownership: 'tenho', status: 'quero_ler',
     progress: { current: 0, total: null }, rating: 0, cover: null, coverTried: false,
-    notes: {}, purchase: {}, sale: {}, loan: {}, ai: null, guide: null,
+    notes: {}, purchase: {}, sale: {}, loan: {}, ai: null, guide: null, readings: [], reread: false,
     userPhase: null, priority: false, startedAt: null, finishedAt: null, createdAt: now, updatedAt: now,
     ...p,
   };
 }
 const isAudio = (b) => b.format === 'audiobook';
+// Duas bases para o plano e as sugestões, cada uma guardada à parte:
+// "ref" segue as listas do Contra os Acadêmicos; "ia" é o critério próprio da IA.
+const MODES = { ref: 'Contra os Acadêmicos', ia: 'Visão da IA' };
+const MODE_HINT = {
+  ref: 'Segue a ordem, os níveis e os pré-requisitos das listas do Contra os Acadêmicos.',
+  ia: 'A IA monta pelo próprio critério, com base na avaliação geral de cada obra, sem seguir uma lista específica.',
+};
+const refEnabled = () => state.settings.referenceLists !== false;
+const planMode = () => (refEnabled() && state.library.planMode !== 'ia' ? 'ref' : 'ia');
+const currentPlan = () => state.library.plans?.[planMode()] || null;
+const currentSuggestions = () => state.library.suggestionSets?.[planMode()] || null;
+function modeSwitch(kind) {
+  if (!refEnabled()) return '';
+  const has = kind === 'plan' ? state.library.plans : state.library.suggestionSets;
+  return `<div class="mode-switch"><div class="segmented" role="tablist" aria-label="Base">${Object.entries(MODES).map(([k, v]) => `<button role="tab" class="${planMode() === k ? 'active' : ''}" data-action="plan-mode" data-mode="${k}" aria-selected="${planMode() === k}">${k === 'ref' ? icon('layers') : icon('sparkles')}${v}${has?.[k] ? '' : '<span class="faint small"> · vazio</span>'}</button>`).join('')}</div>
+    <p class="faint small">${MODE_HINT[planMode()]}</p></div>`;
+}
+// Releitura: as leituras concluídas antes da atual ficam em b.readings; b.reread marca "quero reler".
+const pastReads = (b) => arr(b?.readings).length;
+const timesRead = (b) => pastReads(b) + (b?.status === 'lido' ? 1 : 0);
+const isDone = (b) => b?.status === 'lido' && !b.reread;
+// Quantas vezes já leu, quando está relendo ou quer reler (0 na primeira leitura).
+const rereadCount = (b) => (b.status === 'lendo' ? pastReads(b) : b.status === 'lido' && b.reread ? timesRead(b) : 0);
 const unitLabel = (b) => (isAudio(b) ? 'min' : 'pág.');
 function pct(b) {
   if (b.status === 'lido') return 100;
@@ -98,8 +122,9 @@ function hueFor(b) {
   return h;
 }
 function remainingHours(b) {
-  if (['lido', 'abandonado'].includes(b.status) || b.ownership === 'vendido') return 0;
+  if (isDone(b) || b.status === 'abandonado' || b.ownership === 'vendido') return 0;
   const h = Number(b.ai?.hours) || 0;
+  if (b.status === 'lido') return h; // marcado para reler
   return h * (1 - pct(b) / 100);
 }
 
@@ -113,7 +138,8 @@ const state = {
   drawer: { id: null, tab: 'geral' },
   busy: {}, // chave -> timestamp de início
   classifyProgress: null,
-  importDraft: null,
+  importDraft: null, // { from: 'lista' | 'imagem' | 'ia', books, phases, source }
+  ask: { chat: [], options: [], busy: false }, // conversa da aba "Pedir à IA"
 };
 const books = () => state.library.books;
 const byId = (id) => books().find((b) => b.id === id);
@@ -335,7 +361,7 @@ async function extractFromImages(el) {
     if (!r.books.length) { toast('Não encontrei livros nessa imagem.', 'err'); return; }
     for (const i of imgs) URL.revokeObjectURL(i.url);
     state.pendingImages = [];
-    state.importDraft = { books: r.books, phases: [], source: r.source };
+    state.importDraft = { from: 'imagem', books: r.books, phases: [], source: r.source };
     if (modal().open) openAdd('imagem');
   });
 }
@@ -401,12 +427,13 @@ async function generatePlan() {
   if (!activeProvider()) { openSettings(); return; }
   const unclassified = books().filter((b) => !b.ai && b.ownership !== 'vendido').length;
   if (unclassified) toast(`Dica: ${plural(unclassified, 'livro ainda não classificado', 'livros ainda não classificados')}; o plano fica melhor depois de classificar.`);
-  await withBusy('plan', async () => {
+  const mode = planMode();
+  await withBusy(`plan:${mode}`, async () => {
     const candidates = books().filter((b) => b.ownership !== 'vendido');
-    const { plan } = await api('POST', '/api/ai/plan', { books: candidates });
-    state.library.plan = sanitizePlan(plan);
+    const { plan } = await api('POST', '/api/ai/plan', { books: candidates, mode });
+    state.library.plans = { ...state.library.plans, [mode]: sanitizePlan(plan) };
     persist();
-    toast('Plano de leitura atualizado.');
+    toast(`Plano (${MODES[mode]}) atualizado.`);
   });
 }
 
@@ -425,6 +452,8 @@ function sanitizePlan(plan) {
     now: arr(plan.now).map(ref).filter(Boolean).slice(0, 3),
     parallel: arr(plan.parallel).map((p) => ({ reason: str(p?.reason), ids: arr(p?.ids).filter((id) => valid.has(id)) })).filter((p) => p.ids.length >= 2),
     routine: arr(plan.routine).map(str),
+    reference: str(plan.reference),
+    rereads: arr(plan.rereads).map(ref).filter((x) => x && byId(x.id)?.status === 'lido').slice(0, 3),
   };
 }
 
@@ -442,12 +471,24 @@ function sanitizeLibrary(lib) {
       status: STATUS[b.status] ? b.status : 'quero_ler',
       progress: { ...base.progress, ...(b.progress && typeof b.progress === 'object' ? b.progress : {}) },
       notes: b.notes && typeof b.notes === 'object' ? b.notes : {},
+      readings: arr(b.readings).filter((r) => r && typeof r === 'object').map((r) => ({
+        startedAt: str(r.startedAt).slice(0, 10), finishedAt: str(r.finishedAt).slice(0, 10), rating: clamp(Number(r.rating) || 0, 0, 5),
+      })),
+      reread: !!b.reread,
       cover: /^(https?:\/\/|\/covers\/[\w-]+\.(jpg|png|webp|gif)(\?v=\w+)?$)/.test(str(b.cover)) ? b.cover : null,
     };
   });
   state.library = out; // sanitizePlan/Suggestions validam ids contra estes livros
-  out.plan = sanitizePlan(lib?.plan);
-  out.suggestions = lib?.suggestions ? sanitizeSuggestions(lib.suggestions) : null;
+  const plans = { ...(lib?.plans && typeof lib.plans === 'object' ? lib.plans : {}) };
+  const sets = { ...(lib?.suggestionSets && typeof lib.suggestionSets === 'object' ? lib.suggestionSets : {}) };
+  // Formato antigo: um plano e um conjunto de sugestões; vão para o modo em que foram gerados.
+  if (lib?.plan) plans[lib.plan.reference ? 'ref' : 'ia'] ||= lib.plan;
+  if (lib?.suggestions) sets[lib.suggestions.reference ? 'ref' : 'ia'] ||= lib.suggestions;
+  out.plans = Object.fromEntries(Object.keys(MODES).map((k) => [k, sanitizePlan(plans[k])]));
+  out.suggestionSets = Object.fromEntries(Object.keys(MODES).map((k) => [k, sets[k] ? sanitizeSuggestions(sets[k]) : null]));
+  out.planMode = lib?.planMode === 'ia' ? 'ia' : 'ref';
+  delete out.plan;
+  delete out.suggestions;
   return out;
 }
 
@@ -478,11 +519,12 @@ function sanitizeGuide(g) {
 
 async function suggestBooks() {
   if (!activeProvider()) { openSettings(); return; }
-  await withBusy('suggest', async () => {
-    const { suggestions } = await api('POST', '/api/ai/suggest', { books: books() });
-    state.library.suggestions = sanitizeSuggestions(suggestions);
+  const mode = planMode();
+  await withBusy(`suggest:${mode}`, async () => {
+    const { suggestions } = await api('POST', '/api/ai/suggest', { books: books(), mode });
+    state.library.suggestionSets = { ...state.library.suggestionSets, [mode]: sanitizeSuggestions(suggestions) };
     persist();
-    toast('Novas sugestões prontas.');
+    toast(`Sugestões (${MODES[mode]}) prontas.`);
   });
 }
 
@@ -492,7 +534,7 @@ async function makeGuide(id) {
   if (!activeProvider()) { openSettings(); return; }
   await withBusy(`guide:${id}`, async () => {
     const { guide } = await api('POST', '/api/ai/guide', {
-      book: b, library: books().map((x) => ({ id: x.id, title: x.title, author: x.author })),
+      book: { ...b, reads: rereadCount(b) }, library: books().map((x) => ({ id: x.id, title: x.title, author: x.author })),
     });
     updateBook(id, { guide: sanitizeGuide(guide) });
     toast(`Guia de “${b.title}” pronto.`);
@@ -551,7 +593,7 @@ function renderView() {
 function planOrder() {
   const order = new Map();
   let i = 0;
-  for (const ph of state.library.plan?.phases || []) for (const x of ph.books) order.set(x.id, i++);
+  for (const ph of currentPlan()?.phases || []) for (const x of ph.books) order.set(x.id, i++);
   return order;
 }
 
@@ -559,7 +601,7 @@ function filteredBooks() {
   const f = state.filters;
   const q = norm(f.q);
   let list = books().filter((b) => {
-    if (f.status !== 'todos' && b.status !== f.status) return false;
+    if (f.status === 'reler' ? !b.reread : f.status !== 'todos' && b.status !== f.status) return false;
     if (f.format && b.format !== f.format) return false;
     if (f.ownership && b.ownership !== f.ownership) return false;
     if (f.category && b.ai?.category !== f.category) return false;
@@ -581,8 +623,11 @@ function viewShelf() {
   const all = books();
   if (!all.length) return emptyShelf();
   const reading = all.filter((b) => b.status === 'lendo');
-  const read = all.filter((b) => b.status === 'lido').length;
-  const readThisYear = all.filter((b) => b.status === 'lido' && (b.finishedAt || '').startsWith(String(new Date().getFullYear()))).length;
+  const read = all.filter((b) => timesRead(b) > 0).length;
+  const year = String(new Date().getFullYear());
+  // Conta leituras, não livros: uma releitura concluída este ano também entra.
+  const readThisYear = all.reduce((n, b) => n + arr(b.readings).filter((r) => r.finishedAt.startsWith(year)).length
+    + (b.status === 'lido' && (b.finishedAt || '').startsWith(year) ? 1 : 0), 0);
   const owned = all.filter((b) => b.ownership !== 'vendido' && b.ownership !== 'desejo');
   const spent = all.reduce((s, b) => s + (Number(b.purchase?.price) || 0), 0);
   const earned = all.reduce((s, b) => s + (Number(b.sale?.price) || 0), 0);
@@ -591,6 +636,7 @@ function viewShelf() {
   const weeks = hours ? Math.ceil((hours * 60) / perDay / 7) : 0;
   const pending = all.filter((b) => !b.ai);
   const counts = Object.fromEntries(Object.keys(STATUS).map((k) => [k, all.filter((b) => b.status === k).length]));
+  const toReread = all.filter((b) => b.reread).length;
   const categories = [...new Set(all.map((b) => b.ai?.category).filter(Boolean))].sort();
   const list = filteredBooks();
   const f = state.filters;
@@ -626,6 +672,7 @@ function viewShelf() {
       <div class="chips">
         <button class="chip ${f.status === 'todos' ? 'active' : ''}" data-action="filter" data-key="status" data-value="todos">Todos <span class="n">${all.length}</span></button>
         ${Object.entries(STATUS).filter(([k]) => counts[k]).map(([k, v]) => `<button class="chip ${f.status === k ? 'active' : ''}" data-action="filter" data-key="status" data-value="${k}">${v} <span class="n">${counts[k]}</span></button>`).join('')}
+        ${toReread ? `<button class="chip ${f.status === 'reler' ? 'active' : ''}" data-action="filter" data-key="status" data-value="reler">Quero reler <span class="n">${toReread}</span></button>` : ''}
       </div>
       <select class="select" data-filter="format" aria-label="Formato"><option value="">Formato</option>${Object.entries(FORMAT).map(([k, v]) => `<option value="${k}" ${f.format === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
       <select class="select" data-filter="ownership" aria-label="Acervo"><option value="">Acervo</option>${Object.entries(OWNERSHIP).map(([k, v]) => `<option value="${k}" ${f.ownership === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
@@ -684,23 +731,23 @@ function emptyShelf() {
 
 // ============================================================ view: plano
 function viewPlan() {
-  const plan = state.library.plan;
+  const plan = currentPlan();
   const hasBooks = books().length > 0;
   const prov = activeProvider();
   const head = `<div class="view-head">
     <div><h1>Plano de leitura</h1><p class="lede">Ordem sugerida, o que ler em paralelo e por onde começar.</p></div>
-    ${hasBooks ? `<div class="plan-controls">${busyBtn('plan', { idle: plan ? 'Refazer com IA' : 'Gerar com IA', busy: 'Montando plano' }, 'data-action="gen-plan"', plan ? 'btn' : 'btn primary', plan ? 'refresh' : 'sparkles')}</div>` : ''}
-  </div>`;
+    ${hasBooks ? `<div class="plan-controls">${busyBtn(`plan:${planMode()}`, { idle: plan ? 'Refazer com IA' : 'Gerar com IA', busy: 'Montando plano' }, 'data-action="gen-plan"', plan ? 'btn' : 'btn primary', plan ? 'refresh' : 'sparkles')}</div>` : ''}
+  </div>${hasBooks ? modeSwitch('plan') : ''}`;
   if (!plan) {
     return `<div class="fade-in">${head}<div class="empty">
       <div class="art">${icon('map')}</div>
       <h2>${hasBooks ? 'Nenhum plano ainda' : 'Adicione livros primeiro'}</h2>
-      <p>${hasBooks ? `A IA vai ordenar seus livros em fases progressivas, sugerir leituras em paralelo e dizer por onde começar, considerando ${state.settings.minutesPerDay || 45} min de leitura por dia.` : 'O plano é montado a partir da sua estante.'}</p>
+      <p>${hasBooks ? `A IA vai ordenar seus livros em fases progressivas${planMode() === 'ref' ? ' seguindo as listas do Contra os Acadêmicos' : ' pelo próprio critério'}, sugerir leituras em paralelo e dizer por onde começar, considerando ${state.settings.minutesPerDay || 45} min de leitura por dia.` : 'O plano é montado a partir da sua estante.'}</p>
       ${hasBooks && !prov ? '<p class="small">Nenhuma IA configurada. <a href="#" data-action="open-settings">Configurar</a></p>' : ''}
     </div></div>`;
   }
 
-  const done = (id) => byId(id)?.status === 'lido';
+  const done = (id) => isDone(byId(id));
   let currentFound = false;
   const phases = plan.phases.map((ph, i) => {
     const allDone = ph.books.every((x) => done(x.id) || byId(x.id)?.status === 'abandonado');
@@ -722,8 +769,10 @@ function viewPlan() {
 
   const now = plan.now?.length ? plan.now : derivedNow(plan);
   const ROLE = { principal: 'Principal', paralelo: 'Em paralelo', audiobook: 'No audiobook' };
+  // Sugestões de releitura que o leitor ainda não marcou nem começou.
+  const rereads = arr(plan.rereads).filter((x) => isDone(byId(x.id)));
   return `<div class="fade-in">${head}
-    ${plan.summary ? `<div class="card plan-summary">${esc(plan.summary)}<div class="meta">${plan.source === 'arquivo' ? 'Importado do seu arquivo' : `Gerado por ${esc(plan.provider || 'IA')}`} · ${new Date(plan.generatedAt || Date.now()).toLocaleDateString('pt-BR')}</div></div>` : ''}
+    ${plan.summary ? `<div class="card plan-summary">${esc(plan.summary)}<div class="meta">${plan.source === 'arquivo' ? 'Importado do seu arquivo' : `Gerado por ${esc(plan.provider || 'IA')}`}${plan.reference ? ` · seguindo as listas do <a href="https://contraosacademicos.com.br/lista" target="_blank" rel="noopener">${esc(plan.reference)}</a>` : plan.source === 'ia' ? ' · critério próprio da IA' : ''} · ${new Date(plan.generatedAt || Date.now()).toLocaleDateString('pt-BR')}</div></div>` : ''}
 
     ${now.length ? `<div class="section-title"><h2>Comece por aqui</h2></div>
     <div class="start-grid">${now.map((x) => {
@@ -743,6 +792,9 @@ function viewPlan() {
         <div class="names">${bs.map((b) => esc(b.title)).join(' + ')}</div><p>${esc(p.reason)}</p></div>`;
     }).join('')}</div>` : ''}
 
+    ${rereads.length ? `<div class="section-title"><h2>Vale reler</h2><span class="muted small">obras densas raramente se esgotam numa leitura</span></div>
+    <div class="card reread-list">${rereads.map((x) => planRow(x, true)).join('')}</div>` : ''}
+
     ${plan.routine?.length ? `<div class="section-title"><h2>Rotina</h2></div>
     <div class="card routine"><ul>${plan.routine.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>` : ''}
   </div>`;
@@ -752,31 +804,34 @@ function derivedNow(plan) {
   const reading = books().filter((b) => b.status === 'lendo').map((b) => ({ id: b.id }));
   if (reading.length) return reading.slice(0, 3);
   for (const ph of plan.phases) {
-    const next = ph.books.find((x) => !['lido', 'abandonado'].includes(byId(x.id)?.status));
+    const next = ph.books.find((x) => !isDone(byId(x.id)) && byId(x.id)?.status !== 'abandonado');
     if (next) return [{ id: next.id, reason: next.reason || `Primeiro livro pendente da fase “${ph.name}”.` }];
   }
   return [];
 }
 
-function planRow(x) {
+function planRow(x, rereadAction = false) {
   const b = byId(x.id);
   if (!b) return '';
-  const st = b.status !== 'quero_ler' ? `<span class="tag ${b.status === 'lido' ? 'ok' : b.status === 'lendo' ? 'accent' : ''}">${STATUS[b.status]}</span>` : (b.ownership === 'desejo' ? '<span class="tag warn">comprar</span>' : '');
-  return `<div class="pb ${b.status === 'lido' ? 'is-done' : ''}" role="button" tabindex="0" data-action="open-book" data-id="${b.id}">
+  const st = b.reread ? '<span class="tag warn">reler</span>'
+    : b.status === 'lendo' && pastReads(b) ? `<span class="tag accent">${pastReads(b) + 1}ª leitura</span>`
+    : b.status !== 'quero_ler' ? `<span class="tag ${b.status === 'lido' ? 'ok' : b.status === 'lendo' ? 'accent' : ''}">${STATUS[b.status]}</span>` : (b.ownership === 'desejo' ? '<span class="tag warn">comprar</span>' : '');
+  return `<div class="pb ${isDone(b) && !rereadAction ? 'is-done' : ''}" role="button" tabindex="0" data-action="open-book" data-id="${b.id}">
     ${coverHTML(b, { size: 'xs', badges: false })}
     <div><div class="t">${esc(b.title)}</div><div class="r">${esc(x.reason || b.author || '')}</div></div>
-    <div class="tags">${b.format === 'audiobook' ? '<span class="tag">audiobook</span>' : ''}${st}</div>
+    <div class="tags">${b.format === 'audiobook' ? '<span class="tag">audiobook</span>' : ''}${rereadAction
+      ? `<button class="btn sm" data-action="toggle-reread" data-id="${b.id}">${icon('refresh')}Quero reler</button>` : st}</div>
   </div>`;
 }
 
 // ============================================================ view: descobrir
 function viewDiscover() {
-  const s = state.library.suggestions;
+  const s = currentSuggestions();
   const hasBooks = books().length > 0;
   const head = `<div class="view-head">
     <div><h1>Descobrir</h1><p class="lede">Próximas compras que complementam o que você já tem, incluindo contrapontos para uma visão equilibrada.</p></div>
-    ${hasBooks ? busyBtn('suggest', { idle: s ? 'Novas sugestões' : 'Sugerir livros', busy: 'Pensando' }, 'data-action="suggest"', s ? 'btn' : 'btn primary', s ? 'refresh' : 'sparkles') : ''}
-  </div>`;
+    ${hasBooks ? busyBtn(`suggest:${planMode()}`, { idle: s ? 'Novas sugestões' : 'Sugerir livros', busy: 'Pensando' }, 'data-action="suggest"', s ? 'btn' : 'btn primary', s ? 'refresh' : 'sparkles') : ''}
+  </div>${hasBooks ? modeSwitch('suggest') : ''}`;
   if (!s?.items?.length) {
     return `<div class="fade-in">${head}<div class="empty"><div class="art">${icon('compass')}</div>
       <h2>${hasBooks ? 'O que ler depois?' : 'Adicione livros primeiro'}</h2>
@@ -786,7 +841,7 @@ function viewDiscover() {
   const owned = new Set(books().map((b) => norm(b.title)));
   const items = [...s.items].sort((a, b) => (a.priority || 3) - (b.priority || 3));
   return `<div class="fade-in">${head}
-    ${s.summary ? `<div class="card plan-summary">${esc(s.summary)}<div class="meta">Gerado por ${esc(s.provider || 'IA')} · ${new Date(s.generatedAt).toLocaleDateString('pt-BR')}</div></div>` : ''}
+    ${s.summary ? `<div class="card plan-summary">${esc(s.summary)}<div class="meta">Gerado por ${esc(s.provider || 'IA')}${s.reference ? ` · a partir das listas do <a href="https://contraosacademicos.com.br/lista" target="_blank" rel="noopener">${esc(s.reference)}</a>` : ''} ·${new Date(s.generatedAt).toLocaleDateString('pt-BR')}</div></div>` : ''}
     <div class="section-title"><h2>Sugestões</h2></div>
     <div class="sugg-grid">${items.map((it, i) => {
       const [kl, kc] = KIND[it.kind] || [it.kind || 'Sugestão', ''];
@@ -849,6 +904,8 @@ function renderDrawer() {
           ${b.ai?.category ? `<span class="tag">${esc(b.ai.category)}${b.ai.subcategory ? ` · ${esc(b.ai.subcategory)}` : ''}</span>` : ''}
           ${b.ai?.nature ? `<span class="tag ${NATURE_TAG[b.ai.nature] || ''}">${esc(b.ai.nature)}</span>` : ''}
           ${b.priority ? '<span class="tag accent">prioritário</span>' : ''}
+          ${b.reread ? '<span class="tag warn">quero reler</span>' : ''}
+          ${timesRead(b) > 1 ? `<span class="tag ok">lido ${timesRead(b)}×</span>` : b.status === 'lendo' && pastReads(b) ? `<span class="tag accent">${pastReads(b) + 1}ª leitura</span>` : ''}
           ${b.userPhase ? `<span class="tag" title="Fase no seu plano original">${esc(b.userPhase)}</span>` : ''}
         </div>
       </div>
@@ -871,6 +928,7 @@ function drawerOverview(b) {
   const related = (ai?.related || []).map(byId).filter(Boolean);
   return `
     <div><span class="field-label">Status</span>${segmented('status', STATUS, b.status)}</div>
+    ${readingsBlock(b)}
 
     <div class="progress-edit">
       <span class="field-label" style="margin:0">Progresso · ${p}%</span>
@@ -882,6 +940,7 @@ function drawerOverview(b) {
     </div>
 
     <div><span class="field-label">Formato</span>${segmented('format', FORMAT, b.format, FORMAT_ICON)}</div>
+    ${refBlock(b)}
 
     <div><span class="field-label">Sua nota</span><div class="stars">${[1, 2, 3, 4, 5].map((n) => `<button class="${n <= (b.rating || 0) ? 'on' : ''}" data-action="rate" data-value="${n}" aria-label="${n} estrela${n > 1 ? 's' : ''}">${icon('star')}</button>`).join('')}</div></div>
 
@@ -961,11 +1020,45 @@ function drawerOwnership(b) {
       <button class="btn sm danger ghost" data-action="delete-book" data-id="${b.id}">${icon('trash')}Excluir livro</button></div>`;
 }
 
+// Histórico de leituras e releitura. Só aparece depois da primeira leitura concluída.
+function readingsBlock(b) {
+  const past = arr(b.readings);
+  if (!past.length && b.status !== 'lido') return '';
+  const month = (d) => (d ? new Date(`${d}T12:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/\.? de /g, ' ') : '');
+  const span = (r) => (r.startedAt && r.finishedAt ? `${month(r.startedAt)} → ${month(r.finishedAt)}`
+    : r.finishedAt ? `terminou em ${month(r.finishedAt)}` : r.startedAt ? `começou em ${month(r.startedAt)}` : 'sem datas');
+  const stars = (n) => (n ? ` · ${'★'.repeat(n)}` : '');
+  const rows = past.map((r, i) => `<li><b>${i + 1}ª leitura</b><span class="muted">${esc(span(r))}${stars(r.rating)}</span>
+    <button class="icon-btn" data-action="reading-remove" data-index="${i}" aria-label="Remover do histórico" title="Remover do histórico">${icon('x')}</button></li>`);
+  if (b.status === 'lido') rows.push(`<li><b>${past.length + 1}ª leitura</b><span class="muted">${esc(span(b))}${stars(b.rating)}</span></li>`);
+  else if (b.status === 'lendo') rows.push(`<li><b>${past.length + 1}ª leitura</b><span class="muted">em andamento${b.startedAt ? ` desde ${esc(month(b.startedAt))}` : ''}</span></li>`);
+  return `<div class="readings"><span class="field-label">Leituras</span>
+    <ul>${rows.join('')}</ul>
+    ${b.status === 'lido' ? `<div class="readings-actions">
+      <button class="btn sm primary" data-action="reread-start" data-id="${b.id}">${icon('refresh')}Ler de novo</button>
+      <button class="btn sm ${b.reread ? '' : 'ghost'}" data-action="toggle-reread" data-id="${b.id}" aria-pressed="${b.reread}">${b.reread ? `${icon('check')}Na lista para reler` : 'Quero reler depois'}</button>
+    </div>` : ''}
+  </div>`;
+}
+
+// Começa uma nova leitura de um livro já lido: a anterior vai para o histórico.
+function startReread(b) {
+  const today = new Date().toISOString().slice(0, 10);
+  updateBook(b.id, {
+    readings: [...arr(b.readings), { startedAt: b.startedAt || '', finishedAt: b.finishedAt || '', rating: b.rating || 0 }],
+    status: 'lendo', startedAt: today, finishedAt: null, reread: false,
+    progress: { ...b.progress, current: 0 },
+  });
+  toast(`Começando a ${pastReads(byId(b.id)) + 1}ª leitura de “${b.title}”.`);
+}
+
 function autoGrow() {
   for (const t of $$('#drawer textarea')) { t.style.height = 'auto'; t.style.height = `${t.scrollHeight + 2}px`; }
 }
 
 function setStatus(b, status) {
+  // Livro marcado para reler: "Lendo" começa a releitura em vez de reabrir a leitura anterior.
+  if (status === 'lendo' && b.status === 'lido' && b.reread) { startReread(b); return; }
   const patch = { status };
   const today = new Date().toISOString().slice(0, 10);
   if (status === 'lendo' && !b.startedAt) patch.startedAt = today;
@@ -986,17 +1079,36 @@ function showModal(html, kind = '') {
 function closeModal() { if (modal().open) modal().close(); }
 modal().addEventListener('close', () => { state.modalKind = ''; state.coverPicker = null; });
 
-function renderImageTab() { if (modal().open && state.addTab === 'imagem' && !state.importDraft) openAdd('imagem'); }
+function renderImageTab() { if (modal().open && state.addTab === 'imagem' && state.importDraft?.from !== 'imagem') openAdd('imagem'); }
 
 function openAdd(tab = 'um') {
   state.addTab = tab;
-  const d = tab === 'um' ? null : state.importDraft;
-  const tabs = `<div class="segmented" style="margin-bottom:4px">
+  const d = state.importDraft?.from === tab ? state.importDraft : null;
+  const tabs = `<div class="segmented add-tabs" style="margin-bottom:4px">
     <button class="${tab === 'um' ? 'active' : ''}" data-action="add-tab" data-tab="um">${icon('plus')}Um livro</button>
+    <button class="${tab === 'ia' ? 'active' : ''}" data-action="add-tab" data-tab="ia">${icon('sparkles')}Pedir à IA</button>
     <button class="${tab === 'imagem' ? 'active' : ''}" data-action="add-tab" data-tab="imagem">${icon('image')}Imagem</button>
-    <button class="${tab === 'lista' ? 'active' : ''}" data-action="add-tab" data-tab="lista">${icon('file')}Lista ou arquivo</button></div>`;
+    <button class="${tab === 'lista' ? 'active' : ''}" data-action="add-tab" data-tab="lista">${icon('file')}Lista</button></div>`;
   let body;
-  if (tab === 'imagem' && !d) {
+  if (tab === 'ia' && !d) {
+    const { chat, options, busy } = state.ask;
+    const last = chat.at(-1);
+    body = `<div class="modal-body">${tabs}
+      <div class="chat" id="ask-chat" aria-live="polite">
+        ${chat.length ? chat.map((m) => `<div class="msg ${m.role}">${esc(m.text)}</div>`).join('') : `<div class="chat-hint">${icon('sparkles')}<div>
+          <b>Descreva o livro do seu jeito.</b>
+          <span class="muted small">Ex.: “o do Harari sobre a história da humanidade, em audiobook” ou “comprei ontem Meditações na Amazon por R$ 39”. Se ficar alguma dúvida sobre qual livro é, a IA pergunta antes de adicionar.</span></div></div>`}
+        ${busy ? '<div class="msg ai pending"><span class="spinner"></span>Pensando…</div>' : ''}
+        ${!busy && last?.role === 'ai' && options.length ? `<div class="chat-options">${options.map((o, i) => `<button class="chip" data-action="ask-option" data-index="${i}">${esc(o)}</button>`).join('')}</div>` : ''}
+      </div>
+      <form id="ask-form" class="ask-input">
+        <textarea class="textarea" name="text" rows="2" ${busy ? 'disabled' : ''} placeholder="${chat.length ? 'Responda ou dê mais detalhes…' : 'Qual livro você quer adicionar?'}" aria-label="Mensagem para a IA"></textarea>
+        <button class="btn primary" type="submit" ${busy ? 'disabled' : ''} aria-label="Enviar">${icon('send')}</button>
+      </form>
+      ${chat.length ? `<div class="modal-foot" style="padding:0"><button class="btn ghost sm" data-action="ask-reset" ${busy ? 'disabled' : ''}>${icon('refresh')}Recomeçar</button></div>` : ''}
+      ${activeProvider() ? '' : '<p class="small">Nenhuma IA configurada. <a href="#" data-action="open-settings">Configurar</a></p>'}
+    </div>`;
+  } else if (tab === 'imagem' && !d) {
     const imgs = state.pendingImages || [];
     body = `<div class="modal-body">${tabs}
       <label class="dropzone ${imgs.length ? 'has-images' : ''}" id="dropzone">
@@ -1022,10 +1134,11 @@ function openAdd(tab = 'um') {
     </form>`;
   } else if (d) {
     const existing = new Set(books().map((b) => norm(b.title)));
-    const fromImage = tab === 'imagem';
+    const fromImage = tab === 'imagem' || tab === 'ia';
+    const fromChat = tab === 'ia';
     body = `<div class="modal-body">${tabs}
-      <p class="muted small">${d.source ? `<b>${esc(d.source)}</b> · ` : ''}${plural(d.books.length, 'livro encontrado', 'livros encontrados')}${d.phases?.length ? ` em ${plural(d.phases.length, 'fase', 'fases')}` : ''}. Desmarque o que não quiser importar.</p>
-      <div class="grid-2">
+      ${fromChat ? `<div class="msg ai" style="max-width:100%">${esc(d.source || 'Encontrei.')}</div>` : `<p class="muted small">${d.source ? `<b>${esc(d.source)}</b> · ` : ''}${plural(d.books.length, 'livro encontrado', 'livros encontrados')}${d.phases?.length ? ` em ${plural(d.phases.length, 'fase', 'fases')}` : ''}. Desmarque o que não quiser importar.</p>`}
+      <div class="grid-2" ${fromChat ? 'style="display:none"' : ''}>
         <div><span class="field-label">${fromImage ? 'Formato (se não detectado)' : 'Formato'}</span><select class="select" id="imp-format" style="width:100%">${Object.entries(FORMAT).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
         <div><span class="field-label">Situação</span><select class="select" id="imp-own" style="width:100%">${Object.entries(OWNERSHIP).filter(([k]) => k !== 'vendido').map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
       </div>
@@ -1034,12 +1147,14 @@ function openAdd(tab = 'um') {
         const extra = [
           FORMAT[b.format] && fromImage ? `<span class="tag">${FORMAT[b.format]}</span>` : '',
           Number(b.price) > 0 ? `<span class="tag ok">${money(b.price)}</span>` : '',
+          fromChat && b.ownership && b.ownership !== 'tenho' && OWNERSHIP[b.ownership] ? `<span class="tag warn">${OWNERSHIP[b.ownership]}</span>` : '',
+          fromChat && (b.status === 'lendo' || b.status === 'lido') ? `<span class="tag accent">${STATUS[b.status]}</span>` : '',
         ].join('');
         return `<label><input type="checkbox" data-imp="${i}" ${dup ? '' : 'checked'}><span style="flex:1;min-width:0"><b>${esc(b.title)}</b>${b.author ? ` <span class="muted">— ${esc(b.author)}</span>` : ''}</span>${extra}${dup ? '<span class="tag">já existe</span>' : b.priority ? '<span class="tag accent">prioritário</span>' : ''}</label>`;
       }).join('')}</div>
       ${d.phases?.length ? `<label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="imp-plan" checked style="accent-color:var(--accent)"> Usar as fases do arquivo como plano de leitura inicial</label>` : ''}
       <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="imp-ai" ${activeProvider() ? 'checked' : 'disabled'} style="accent-color:var(--accent)"> Classificar com IA após importar${activeProvider() ? ` (${esc(activeProvider().label)})` : ' (nenhuma IA configurada)'}</label>
-      <div class="modal-foot" style="padding:0"><button class="btn ghost" data-action="import-reset">Voltar</button><button class="btn primary" data-action="import-confirm">${icon('check')}Importar selecionados</button></div>
+      <div class="modal-foot" style="padding:0"><button class="btn ghost" data-action="import-reset">${fromChat ? 'Corrigir' : 'Voltar'}</button><button class="btn primary" data-action="import-confirm">${icon('check')}${fromChat ? (d.books.length > 1 ? 'Adicionar selecionados' : 'Adicionar') : 'Importar selecionados'}</button></div>
     </div>`;
   } else {
     body = `<div class="modal-body">${tabs}
@@ -1080,7 +1195,7 @@ async function parseImport(payload, el) {
       return;
     }
     if (payload.path) { state.settings.importPath = payload.path; api('PUT', '/api/settings', { importPath: payload.path }).catch(() => {}); }
-    state.importDraft = r;
+    state.importDraft = { ...r, from: 'lista' };
     if (modal().open) openAdd('lista');
   });
 }
@@ -1092,20 +1207,68 @@ async function extractImport(el) {
   await busyButton(el, 'Extraindo', async () => {
     const r = await api('POST', '/api/ai/extract', { text });
     if (!r.books.length) { toast('A IA não encontrou livros no texto.', 'err'); return; }
-    state.importDraft = r;
+    state.importDraft = { ...r, from: 'lista' };
     if (modal().open) openAdd('lista');
   });
+}
+
+// Aba "Pedir à IA": conversa curta até a IA ter certeza de qual livro é.
+async function askAI(text) {
+  const ask = state.ask;
+  text = str(text).trim();
+  if (!text || ask.busy) return;
+  if (!activeProvider()) { toast('Nenhuma IA configurada.', 'err'); return; }
+  ask.chat.push({ role: 'user', text });
+  ask.options = [];
+  ask.busy = true;
+  const refresh = () => {
+    if (!modal().open || state.addTab !== 'ia') return;
+    openAdd('ia');
+    const box = $('#ask-chat');
+    if (box) box.scrollTop = box.scrollHeight;
+  };
+  refresh();
+  try {
+    const r = await api('POST', '/api/ai/identify', {
+      messages: ask.chat, library: books().map((b) => ({ title: b.title, author: b.author })),
+    });
+    if (r.status === 'pergunta') {
+      ask.chat.push({ role: 'ai', text: r.message });
+      // "Outro…" não é resposta: para isso o leitor digita.
+      ask.options = arr(r.options).map(str).filter((o) => !/^outr[oa]s?\b/i.test(o.trim()));
+    } else if (!arr(r.books).length) {
+      ask.chat.push({ role: 'ai', text: r.message || 'Não consegui identificar o livro. Pode dar mais detalhes, como o autor ou o assunto?' });
+    } else {
+      ask.chat.push({ role: 'ai', text: r.message || 'Encontrei.' });
+      state.importDraft = { from: 'ia', books: r.books, phases: [], source: r.message || '' };
+    }
+  } catch (e) {
+    toast(e.message, 'err');
+    ask.chat.pop(); // devolve o texto para tentar de novo
+    ask.busy = false;
+    refresh();
+    const t = $('#ask-form textarea');
+    if (t) t.value = text;
+    return;
+  }
+  ask.busy = false;
+  refresh();
+  $('#ask-form textarea')?.focus();
 }
 
 function confirmImport() {
   const d = state.importDraft;
   if (!d) return;
-  const format = $('#imp-format').value;
-  const ownership = $('#imp-own').value;
+  const format = $('#imp-format')?.value || 'fisico';
+  const ownership = $('#imp-own')?.value || 'tenho';
+  const today = new Date().toISOString().slice(0, 10);
   const chosen = $$('[data-imp]').filter((c) => c.checked).map((c) => d.books[Number(c.dataset.imp)]);
   if (!chosen.length) { toast('Nenhum livro selecionado.', 'err'); return; }
   const created = chosen.map((x) => newBook({
-    title: str(x.title), author: str(x.author), format: FORMAT[x.format] ? x.format : format, ownership,
+    title: str(x.title), author: str(x.author), format: FORMAT[x.format] ? x.format : format,
+    ownership: OWNERSHIP[x.ownership] && x.ownership !== 'vendido' ? x.ownership : ownership,
+    status: ['lendo', 'lido'].includes(x.status) ? x.status : 'quero_ler',
+    ...(x.status === 'lendo' ? { startedAt: today } : {}),
     userPhase: x.phase || null, priority: !!x.priority,
     // Dados de compra lidos de comprovantes/prints.
     purchase: {
@@ -1118,19 +1281,24 @@ function confirmImport() {
 
   if (d.phases?.length && $('#imp-plan')?.checked) {
     const idByTitle = new Map(books().map((b) => [norm(b.title), b.id]));
-    state.library.plan = sanitizePlan({
+    // O plano do arquivo é do leitor, não de uma lista: fica na "Visão da IA" até ser refeito.
+    state.library.plans = { ...state.library.plans, ia: sanitizePlan({
       source: 'arquivo', generatedAt: new Date().toISOString(),
       summary: 'Plano importado do seu arquivo. Use “Refazer com IA” para a IA reorganizar as fases, indicar leituras em paralelo e explicar cada escolha.',
       phases: d.phases.map((ph) => ({ name: ph.name, goal: ph.goal, books: ph.titles.map((t) => ({ id: idByTitle.get(norm(t)), reason: '' })) })),
-    });
+    }) };
+    state.library.planMode = 'ia';
   }
   const runAi = $('#imp-ai')?.checked;
   state.importDraft = null;
+  if (d.from === 'ia') state.ask = { chat: [], options: [], busy: false };
   persist();
   closeModal();
   renderAll();
-  toast(`${plural(created.length, 'livro importado', 'livros importados')}.`);
+  toast(`${plural(created.length, d.from === 'ia' ? 'livro adicionado' : 'livro importado', d.from === 'ia' ? 'livros adicionados' : 'livros importados')}.`);
+  if (d.from === 'ia' && created.length === 1) openBook(created[0].id);
   fillCovers();
+  loadRefMatches();
   if (runAi) classify(created.map((b) => b.id));
 }
 
@@ -1151,6 +1319,7 @@ function addOne(form) {
   renderAll();
   openBook(b.id);
   fillCovers();
+  loadRefMatches();
   if (activeProvider()) classify([b.id]);
 }
 
@@ -1191,12 +1360,19 @@ function openSettings(typed = null) {
       <label class="input-group"><input class="input" type="number" min="5" max="600" name="minutesPerDay" value="${esc(s.minutesPerDay || 45)}"><span class="faint small">min/dia</span></label>
     </div>
     <textarea class="textarea" name="goal" rows="2" style="margin-top:10px" placeholder="Objetivo com a leitura (opcional). Ex.: formação filosófica sólida e entender economia">${esc(s.goal || '')}</textarea></div>
+    <div><span class="field-label">Listas de referência</span>
+      <label class="check-row"><input type="checkbox" name="referenceLists" ${s.referenceLists !== false ? 'checked' : ''}>
+        <span>Seguir as listas do <a href="https://contraosacademicos.com.br/lista" target="_blank" rel="noopener">Contra os Acadêmicos</a> na ordem do plano e nas sugestões</span></label>
+      <div class="ref-status"><span class="faint small" id="ref-status">Verificando listas…</span>
+        <button type="button" class="btn sm ghost" data-action="ref-refresh">${icon('refresh')}Atualizar listas</button></div>
+    </div>
     <div><span class="field-label">Dados</span><div style="display:flex;gap:8px;flex-wrap:wrap">
       <button type="button" class="btn sm" data-action="export">${icon('download')}Exportar backup</button>
       <label class="btn sm">${icon('upload')}Restaurar backup<input type="file" accept="application/json,.json" id="restore" hidden></label>
     </div></div>
     <div class="modal-foot" style="padding:0"><button type="button" class="btn ghost" data-action="close-modal">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
   </form>`, 'settings');
+  api('GET', '/api/reference').then(showRefStatus).catch(() => showRefStatus(null));
   if (typed) {
     const form = $('#settings');
     for (const [k, v] of Object.entries(typed)) {
@@ -1213,6 +1389,7 @@ async function saveSettings(form) {
   const fd = new FormData(form);
   const patch = Object.fromEntries(['provider', 'anthropicKey', 'anthropicModel', 'openaiKey', 'openaiModel', 'cliModel', 'minutesPerDay', 'goal'].map((k) => [k, fd.get(k) ?? '']));
   patch.provider ||= 'auto';
+  patch.referenceLists = fd.get('referenceLists') === 'on';
   patch.clearAnthropicKey = fd.get('clearAnthropicKey') === 'on';
   patch.clearOpenaiKey = fd.get('clearOpenaiKey') === 'on';
   try {
@@ -1223,7 +1400,35 @@ async function saveSettings(form) {
     closeModal();
     renderAll();
     toast('Ajustes salvos.');
+    loadRefMatches();
   } catch (e) { toast(e.message, 'err'); }
+}
+
+// ============================================================ listas de referência
+function showRefStatus(r) {
+  const el = $('#ref-status');
+  if (!el) return;
+  el.textContent = !r ? 'Não consegui verificar as listas.'
+    : r.updating ? 'Baixando as listas…'
+    : r.lists ? `${r.lists} listas, ${r.books.toLocaleString('pt-BR')} indicações · atualizadas em ${new Date(r.fetchedAt).toLocaleDateString('pt-BR')}`
+    : 'Ainda não baixadas. Elas são baixadas uma vez e renovadas a cada 30 dias.';
+}
+
+// Onde cada livro da estante aparece nas listas (mostrado no painel do livro).
+async function loadRefMatches() {
+  if (state.settings.referenceLists === false) { state.refMatches = {}; return; }
+  try {
+    const { matches } = await api('POST', '/api/reference/match', { books: books().map(({ id, title, author }) => ({ id, title, author })) });
+    state.refMatches = matches || {};
+    if (state.drawer.id) renderDrawer();
+  } catch { /* sem listas, sem seção no painel */ }
+}
+
+function refBlock(b) {
+  const hits = state.refMatches?.[b.id];
+  if (!hits?.length) return '';
+  return `<div class="ref-block"><span class="field-label">Nas listas do Contra os Acadêmicos</span>
+    <ul>${hits.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.list)}</a>${h.path ? `<span class="muted"> › ${esc(h.path)}</span>` : ''}</li>`).join('')}</ul></div>`;
 }
 
 function exportBackup() {
@@ -1332,6 +1537,21 @@ document.addEventListener('click', async (e) => {
       renderAll();
       break;
     }
+    case 'reread-start': startReread(byId(id)); renderAll(); break;
+    case 'toggle-reread': {
+      e.stopPropagation();
+      const b = byId(id);
+      updateBook(id, { reread: !b.reread });
+      renderAll();
+      if (!b.reread) toast(`“${b.title}” está na lista para reler e entra no próximo plano.`);
+      break;
+    }
+    case 'reading-remove': {
+      const b = byId(state.drawer.id);
+      updateBook(b.id, { readings: arr(b.readings).filter((_, i) => i !== Number(el.dataset.index)) });
+      renderAll();
+      break;
+    }
     case 'rate': { const b = byId(state.drawer.id); const v = Number(el.dataset.value); updateBook(b.id, { rating: b.rating === v ? 0 : v }); renderDrawer(); break; }
     case 'bump': {
       e.stopPropagation();
@@ -1349,9 +1569,14 @@ document.addEventListener('click', async (e) => {
     case 'classify-one': classify([id]); break;
     case 'gen-plan': generatePlan(); break;
     case 'suggest': suggestBooks(); break;
+    case 'plan-mode':
+      state.library.planMode = el.dataset.mode === 'ia' ? 'ia' : 'ref';
+      persist();
+      renderAll();
+      break;
     case 'guide': makeGuide(id); break;
     case 'wish': {
-      const it = state.library.suggestions.items[Number(el.dataset.index)];
+      const it = currentSuggestions().items[Number(el.dataset.index)];
       const b = newBook({
         title: it.title, author: it.author || '', ownership: 'desejo',
         ai: { category: it.category || 'Outros', nature: it.nature || '', difficulty: 3, intro: it.why || '', why: '', themes: [], prerequisites: [], related: (it.complements || []).filter(byId), provider: 'sugestão' },
@@ -1360,6 +1585,7 @@ document.addEventListener('click', async (e) => {
       persist();
       renderView();
       fillCovers();
+      loadRefMatches();
       toast(`“${it.title}” na lista de desejos.`);
       break;
     }
@@ -1367,20 +1593,22 @@ document.addEventListener('click', async (e) => {
       if (el.dataset.armed !== '1') { el.dataset.armed = '1'; el.innerHTML = `${icon('trash')}Confirmar exclusão`; setTimeout(() => { if (el.isConnected) { el.dataset.armed = ''; el.innerHTML = `${icon('trash')}Excluir livro`; } }, 3000); return; }
       const b = byId(id);
       state.library.books = books().filter((x) => x.id !== id);
-      if (state.library.plan) state.library.plan = sanitizePlan(state.library.plan);
+      state.library.plans = Object.fromEntries(Object.entries(state.library.plans || {}).map(([k, v]) => [k, sanitizePlan(v)]));
       if (isLocalCover(b.cover)) api('POST', '/api/cover/delete', { id }).catch(() => {});
       persist();
       closeDrawer();
       toast(`“${b.title}” excluído.`);
       break;
     }
-    case 'open-add': openAdd(state.importDraft ? (state.addTab === 'imagem' ? 'imagem' : 'lista') : 'um'); break;
+    case 'open-add': openAdd(state.importDraft?.from || (state.ask.chat.length ? 'ia' : 'um')); break;
     case 'add-tab': openAdd(el.dataset.tab); break;
     case 'import-default': state.importDraft = null; openAdd('lista'); parseImport({ path: state.settings.importPath }, $('[data-action="import-path"]')); break;
     case 'import-path': parseImport({ path: $('#imp-path').value.trim() }, el); break;
     case 'import-text': { const text = $('#imp-text').value; if (text.trim()) parseImport({ text }, el); break; }
     case 'import-ai': extractImport(el); break;
-    case 'import-reset': state.importDraft = null; openAdd(state.addTab === 'imagem' ? 'imagem' : 'lista'); break;
+    case 'import-reset': state.importDraft = null; openAdd(state.addTab); if (state.addTab === 'ia') $('#ask-form textarea')?.focus(); break;
+    case 'ask-option': askAI(state.ask.options[Number(el.dataset.index)] || ''); break;
+    case 'ask-reset': state.ask = { chat: [], options: [], busy: false }; state.importDraft = null; openAdd('ia'); $('#ask-form textarea')?.focus(); break;
     case 'import-confirm': confirmImport(); break;
     case 'close-modal': closeModal(); break;
     case 'read-images': extractFromImages(el); break;
@@ -1419,6 +1647,14 @@ document.addEventListener('click', async (e) => {
       if (advOpen) $('#settings details.adv').open = true;
       break;
     }
+    case 'ref-refresh':
+      busyButton(el, 'Baixando', async () => {
+        showRefStatus({ updating: true });
+        try { showRefStatus(await api('POST', '/api/reference/refresh')); } catch (err) { showRefStatus(null); throw err; }
+        loadRefMatches();
+        toast('Listas do Contra os Acadêmicos atualizadas.');
+      });
+      break;
     case 'test-ai': {
       // Testa o que está no formulário (mesmo sem salvar), não só o que está gravado.
       const typed = Object.fromEntries(new FormData($('#settings')));
@@ -1497,6 +1733,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   const f = e.target;
   if (f.id === 'add-one') addOne(f);
+  if (f.id === 'ask-form') askAI(f.text.value);
   if (f.id === 'settings') saveSettings(f);
   if (f.id === 'cover-search' && state.coverPicker) openCoverPicker(state.coverPicker.id, f.q.value.trim() || undefined);
   if (f.id === 'cover-url') {
@@ -1511,7 +1748,7 @@ document.addEventListener('submit', (e) => {
 function routeImages(files) {
   if (!imageFiles(files).length) return false;
   if (state.modalKind === 'cover') { uploadCover(imageFiles(files)[0], null); return true; }
-  if (state.modalKind === 'add' && state.addTab === 'imagem' && !state.importDraft) { addPendingImages(files); return true; }
+  if (state.modalKind === 'add' && state.addTab === 'imagem' && state.importDraft?.from !== 'imagem') { addPendingImages(files); return true; }
   if (!modal().open) {
     state.importDraft = null;
     openAdd('imagem');
@@ -1539,6 +1776,8 @@ document.addEventListener('keydown', (e) => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role="button"][data-action]')) { e.preventDefault(); e.target.click(); }
   if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) && state.view === 'estante') { e.preventDefault(); $('#search')?.focus(); }
   if (e.key === 'Enter' && e.target.classList?.contains('title')) { e.preventDefault(); e.target.blur(); }
+  // Na conversa com a IA, Enter envia e Shift+Enter quebra a linha (no celular, o botão envia).
+  if (e.key === 'Enter' && !e.shiftKey && !TOUCH && e.target.closest?.('#ask-form')) { e.preventDefault(); e.target.form.requestSubmit(); }
 });
 
 document.addEventListener('compositionend', (e) => {
@@ -1592,5 +1831,6 @@ async function init() {
   renderAiPill();
   route();
   fillCovers();
+  loadRefMatches();
 }
 init();

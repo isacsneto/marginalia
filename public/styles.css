@@ -385,6 +385,34 @@ details.adv[open] summary { margin-bottom: 12px; }
 .preview-list label:last-child { border-bottom: 0; }
 .preview-list input { accent-color: var(--accent); }
 
+/* ============================================================ adicionar pela IA */
+.chat { display: flex; flex-direction: column; gap: 8px; max-height: min(46vh, 420px); min-height: 120px; overflow-y: auto; padding: 2px; }
+.msg { max-width: 86%; padding: 9px 13px; border-radius: 16px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 5px; }
+.msg.ai { align-self: flex-start; background: var(--surface-2); border-bottom-left-radius: 5px; }
+.msg.pending { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }
+.chat-options { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 4px; }
+.chat-options .chip { text-align: left; height: auto; min-height: 34px; padding: 7px 14px; line-height: 1.35; border-radius: 17px; }
+.chat-options .chip:hover { border-color: var(--accent); color: var(--ink); }
+@media (max-width: 520px) { .add-tabs { display: grid; grid-template-columns: 1fr 1fr; } }
+.chat-hint { display: flex; gap: 12px; align-items: flex-start; margin: auto 0; padding: 16px; border: 1.5px dashed var(--line); border-radius: var(--radius); background: var(--bg); }
+.chat-hint > svg { flex: none; width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 1.7; margin-top: 2px; }
+.chat-hint b { display: block; margin-bottom: 4px; }
+.ask-input { display: flex; gap: 8px; align-items: flex-end; }
+.ask-input .textarea { flex: 1; resize: none; }
+.ask-input .btn { height: 42px; width: 46px; padding: 0; justify-content: center; }
+
+/* ============================================================ leituras / releitura */
+.readings ul { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; }
+.readings li { display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 12px; border-bottom: 1px solid var(--line); font-size: 14px; min-height: 40px; }
+.readings li:last-child { border-bottom: 0; }
+.readings li .muted { flex: 1; min-width: 0; }
+.readings li .icon-btn { width: 28px; height: 28px; opacity: .55; }
+.readings li .icon-btn:hover { opacity: 1; }
+.readings li .icon-btn svg { width: 14px; height: 14px; }
+.readings-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.reread-list { padding: 6px; display: flex; flex-direction: column; }
+
 /* ============================================================ imagens / capas */
 .dropzone {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center;
@@ -455,3 +483,18 @@ details.adv[open] summary { margin-bottom: 12px; }
 .drawer { padding-bottom: env(safe-area-inset-bottom); }
 .toasts { bottom: calc(20px + env(safe-area-inset-bottom)); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ============================================================ listas de referência */
+.check-row { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; cursor: pointer; }
+.check-row input { margin-top: 3px; accent-color: var(--accent); flex: none; }
+.check-row a, .plan-summary .meta a, .ref-block a { color: var(--accent); text-decoration: none; }
+.check-row a:hover, .plan-summary .meta a:hover, .ref-block a:hover { text-decoration: underline; }
+.ref-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 8px; padding-left: 26px; }
+.ref-block ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.4; }
+.ref-block li { padding-left: 14px; position: relative; }
+.ref-block li::before { content: ''; position: absolute; left: 2px; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.ref-block a { font-weight: 600; }
+.mode-switch { display: flex; flex-direction: column; gap: 6px; margin: -6px 0 22px; }
+.mode-switch .segmented { align-self: flex-start; }
+.mode-switch .segmented button { padding: 8px 14px; font-size: 13.5px; }
+@media (max-width: 520px) { .mode-switch .segmented { align-self: stretch; } }

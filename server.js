@@ -8,6 +8,7 @@ import { exec } from 'node:child_process';
 import { detectProviders, runAI, DEFAULT_MODELS } from './lib/ai.js';
 import * as prompts from './lib/prompts.js';
 import { parseMarkdownLibrary } from './lib/importer.js';
+import { refreshReference, loadReference, referenceStatus, referenceContext, bookReferences, REFERENCE } from './lib/reference.js';
 import { autoCover, coverCandidates, coverFromUrl, coverFromUpload, removeCover, coversDir } from './lib/covers.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -20,11 +21,14 @@ const COVERS = coversDir(DATA);
 const PORT = Number(process.env.PORT) || 4321;
 const HOST = '127.0.0.1';
 
-const EMPTY_LIBRARY = { version: 1, books: [], plan: null, suggestions: null };
+const EMPTY_LIBRARY = { version: 1, books: [], plans: {}, suggestionSets: {}, planMode: 'ref' };
 const DEFAULT_SETTINGS = {
   provider: 'auto', cliModel: '', anthropicKey: '', anthropicModel: DEFAULT_MODELS['anthropic-api'],
   openaiKey: '', openaiModel: DEFAULT_MODELS['openai-api'], minutesPerDay: 45, goal: '',
   importPath: '',
+  // Usa as listas do Contra os Acadêmicos (contraosacademicos.com.br/lista) como referência
+  // de ordem e níveis no plano e nas sugestões.
+  referenceLists: true,
 };
 
 // ---------------------------------------------------------------- arquivos
@@ -111,7 +115,27 @@ async function serveStatic(req, res) {
 }
 
 // ---------------------------------------------------------------- rotas
-const slim = (b) => ({ id: b.id, title: b.title, author: b.author, format: b.format, status: b.status, ownership: b.ownership, rating: b.rating, userPhase: b.userPhase, ai: b.ai });
+const slim = (b) => ({
+  id: b.id, title: b.title, author: b.author, format: b.format, status: b.status, ownership: b.ownership, rating: b.rating, userPhase: b.userPhase, ai: b.ai,
+  readings: Array.isArray(b.readings) ? b.readings.length : 0, reread: !!b.reread,
+});
+
+// Contexto das listas de referência para um prompt (null se desligado ou indisponível).
+// Atualiza o cache se tiver mais de 30 dias; sem rede, usa o que já foi baixado.
+async function referenceFor(settings, books, opts) {
+  if (!settings.referenceLists) return null;
+  const ref = await refreshReference(DATA).catch(() => loadReference(DATA));
+  const ctx = referenceContext(ref, books, opts);
+  return ctx?.text ? ctx : null;
+}
+
+// No modo "ref" a referência é obrigatória: sem ela o resultado seria um plano da IA no lugar errado.
+async function referenceRequired(settings, books, opts) {
+  if (!settings.referenceLists) throw Object.assign(new Error('As listas de referência estão desligadas nos Ajustes.'), { status: 400 });
+  const ref = await referenceFor(settings, books, opts);
+  if (!ref) throw Object.assign(new Error('Não consegui carregar as listas do Contra os Acadêmicos. Verifique a internet e use “Atualizar listas” nos Ajustes.'), { status: 503 });
+  return ref;
+}
 
 const routes = {
   'GET /api/state': async () => {
@@ -149,6 +173,7 @@ const routes = {
       if (!patch.anthropicKey) merged.anthropicKey = patch.clearAnthropicKey ? '' : current.anthropicKey;
       if (!patch.openaiKey) merged.openaiKey = patch.clearOpenaiKey ? '' : current.openaiKey;
       merged.minutesPerDay = Math.max(5, Math.min(600, Number(merged.minutesPerDay) || 45));
+      merged.referenceLists = merged.referenceLists !== false && merged.referenceLists !== 'false';
       await writeJSON(SETTINGS_FILE, merged);
       return merged;
     });
@@ -176,22 +201,56 @@ const routes = {
   },
 
   'POST /api/ai/plan': async (req) => {
-    const { books } = await body(req);
+    // mode "ref": segue as listas de referência; "ia": critério próprio da IA.
+    const { books, mode } = await body(req);
     const settings = await loadSettings();
-    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.plan(books.map(slim), settings), effort: 'medium' }, settings);
-    return { plan: { ...data, provider, generatedAt: new Date().toISOString(), source: 'ia' } };
+    const ref = mode === 'ia' ? null : await referenceRequired(settings, books);
+    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.plan(books.map(slim), settings, ref), effort: 'medium' }, settings);
+    return { plan: { ...data, provider, generatedAt: new Date().toISOString(), source: 'ia', mode: ref ? 'ref' : 'ia', reference: ref ? REFERENCE.name : '' } };
   },
 
   'POST /api/ai/suggest': async (req) => {
+    const { books, mode } = await body(req);
+    const settings = await loadSettings();
+    const ref = mode === 'ia' ? null : await referenceRequired(settings, books, { candidates: 70 });
+    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.suggest(books.map(slim), ref), effort: 'medium' }, settings);
+    return { suggestions: { ...data, provider, generatedAt: new Date().toISOString(), mode: ref ? 'ref' : 'ia', reference: ref ? REFERENCE.name : '' } };
+  },
+
+  // Listas de referência: estado, atualização manual e onde cada livro da estante aparece.
+  'GET /api/reference': async () => referenceStatus(DATA),
+  'POST /api/reference/refresh': async () => {
+    try { await refreshReference(DATA, { force: true }); } catch (e) { throw Object.assign(e, { status: 502 }); }
+    return referenceStatus(DATA);
+  },
+  'POST /api/reference/match': async (req) => {
     const { books } = await body(req);
-    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.suggest(books.map(slim)), effort: 'medium' }, await loadSettings());
-    return { suggestions: { ...data, provider, generatedAt: new Date().toISOString() } };
+    if (!(await loadSettings()).referenceLists) return { matches: {} };
+    return { matches: bookReferences(await loadReference(DATA), Array.isArray(books) ? books : []) };
   },
 
   'POST /api/ai/guide': async (req) => {
     const { book, library } = await body(req);
     const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.guide(book, library || []), effort: 'medium' }, await loadSettings());
     return { guide: { ...data, provider, generatedAt: new Date().toISOString() } };
+  },
+
+  // Adicionar por conversa: o leitor descreve o livro; se houver ambiguidade, a IA pergunta.
+  'POST /api/ai/identify': async (req) => {
+    const { messages, library } = await body(req);
+    const turns = (Array.isArray(messages) ? messages : [])
+      .filter((m) => m && (m.role === 'user' || m.role === 'ai') && typeof m.text === 'string' && m.text.trim())
+      .slice(-12).map((m) => ({ role: m.role, text: m.text.slice(0, 2000) }));
+    if (!turns.length || turns.at(-1).role !== 'user') throw Object.assign(new Error('Descreva o livro primeiro.'), { status: 400 });
+    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.identify(turns, Array.isArray(library) ? library : []), effort: 'low' }, await loadSettings());
+    const asking = data.status === 'pergunta' && typeof data.message === 'string' && data.message.trim();
+    return {
+      status: asking ? 'pergunta' : 'pronto',
+      message: typeof data.message === 'string' ? data.message : '',
+      options: Array.isArray(data.options) ? data.options.filter((o) => typeof o === 'string' && o.trim()).slice(0, 6) : [],
+      books: asking ? [] : (Array.isArray(data.books) ? data.books : []).filter((b) => b && typeof b.title === 'string' && b.title.trim()),
+      provider,
+    };
   },
 
   'POST /api/ai/extract': async (req) => {
@@ -292,4 +351,6 @@ server.listen(PORT, HOST, () => {
     const opener = process.platform === 'win32' ? `start "" "${url}"` : process.platform === 'darwin' ? `open ${url}` : `xdg-open ${url}`;
     exec(opener, () => {});
   }
+  // Baixa (ou renova, a cada 30 dias) as listas de referência em segundo plano.
+  loadSettings().then((s) => s.referenceLists && refreshReference(DATA)).catch((e) => console.log(`  Listas de referência indisponíveis agora: ${e.message}`));
 });
