@@ -8,7 +8,7 @@ import { exec } from 'node:child_process';
 import { detectProviders, runAI, DEFAULT_MODELS } from './lib/ai.js';
 import * as prompts from './lib/prompts.js';
 import { parseMarkdownLibrary } from './lib/importer.js';
-import { refreshReference, loadReference, referenceStatus, referenceContext, bookReferences, buildReferencePlan, REFERENCE } from './lib/reference.js';
+import { refreshReference, loadReference, referenceStatus, referenceContext, bookReferences, buildReferencePlan, fitTargets, sanitizeFits, REFERENCE } from './lib/reference.js';
 import { autoCover, coverCandidates, coverFromUrl, coverFromUpload, removeCover, coversDir } from './lib/covers.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -197,11 +197,27 @@ const routes = {
   'POST /api/ai/plan': async (req) => {
     // mode "ref": segue as listas de referência; "ia": critério próprio da IA.
     // No modo "ref" a ordem vem direto da estrutura do site (sem IA), para não divergir dele.
-    const { books, mode } = await body(req);
+    // fits: encaixes já feitos pela IA para livros fora das listas (ver /api/ai/fit).
+    const { books, mode, fits } = await body(req);
     const settings = await loadSettings();
-    if (mode !== 'ia') return { plan: buildReferencePlan(await referenceRequired(settings), books, settings) };
+    if (mode !== 'ia') return { plan: buildReferencePlan(await referenceRequired(settings), books, { ...settings, fits: fits && typeof fits === 'object' ? fits : {} }) };
     const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.plan(books.map(slim), settings), effort: 'medium' }, settings);
     return { plan: { ...data, provider, generatedAt: new Date().toISOString(), source: 'ia', mode: 'ia', reference: '' } };
+  },
+
+  // A IA encaixa na sequência do site os livros do leitor que não estão nas listas, sem mexer na
+  // ordem do site. Devolve só os encaixes; o plano é remontado com eles em /api/ai/plan.
+  'POST /api/ai/fit': async (req) => {
+    const { books } = await body(req);
+    const settings = await loadSettings();
+    const list = Array.isArray(books) ? books : [];
+    const plan = buildReferencePlan(await referenceRequired(settings), list, settings);
+    const outside = plan.phases.find((p) => p.kind === 'outside')?.books.map((x) => x.id) || [];
+    if (!outside.length) return { fits: {}, provider: '' };
+    const targets = fitTargets(plan, list);
+    const outsideBooks = list.filter((b) => outside.includes(b.id)).map(slim);
+    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.fit(targets, outsideBooks), effort: 'medium' }, settings);
+    return { fits: sanitizeFits(data.fits, targets, new Set(outside)), provider };
   },
 
   'POST /api/ai/suggest': async (req) => {

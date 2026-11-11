@@ -126,3 +126,39 @@ test('referenceContext lista primeiro o que falta na etapa atual, na ordem do si
   assert.deepEqual(ctx.next.map((n) => n.split(' – ')[0]), ['A Vida Intelectual', 'O Trabalho Intelectual', 'O Trivium']);
   assert.equal(ctx.byBook.como, 'Prolegômenos › Prática da leitura');
 });
+
+test('encaixes da IA entram na posição pedida, sem mexer na ordem do site nem nos Prolegômenos', async () => {
+  const { fitTargets, sanitizeFits } = await import('../lib/reference.js');
+  const books = [
+    { id: 'como', title: 'Como Ler Livros', author: 'Mortimer Adler', status: 'lendo' },
+    { id: 'conf', title: 'Confissões', author: 'Santo Agostinho', status: 'quero_ler' },
+    { id: 'warb', title: 'Uma Breve História da Filosofia', author: 'Nigel Warburton', status: 'quero_ler' },
+    { id: 'sapiens', title: 'Sapiens', author: 'Yuval Harari', status: 'quero_ler' },
+    { id: 'guia', title: 'O Guia do Mochileiro das Galáxias', author: 'Douglas Adams', status: 'quero_ler' },
+  ];
+  const base = buildReferencePlan(ref, books);
+  const targets = fitTargets(base, books);
+  assert.ok(!targets.some((t) => t.key === 'nivel-0'), 'Prolegômenos não recebem encaixes');
+  assert.ok(targets.some((t) => t.key === 'lista-de-leitura-de-historia'), 'listas de área vazias também podem receber');
+  assert.ok(targets.some((t) => t.key === 'paralelo'));
+  const fits = sanitizeFits([
+    { id: 'warb', phase: 'nivel-1', position: 0, reason: 'panorama antes das fontes' },
+    { id: 'sapiens', phase: 'lista-de-leitura-de-historia', position: 1, reason: 'história geral' },
+    { id: 'guia', phase: 'paralelo', position: 9, reason: 'lazer' },
+    { id: 'conf', phase: 'nivel-3', position: 0, reason: 'não está fora das listas' }, // ignorado
+    { id: 'warb2', phase: 'nivel-0', position: 0 }, // ignorado
+  ], targets, new Set(['warb', 'sapiens', 'guia']));
+  assert.deepEqual(Object.keys(fits).sort(), ['guia', 'sapiens', 'warb']);
+  const plan = buildReferencePlan(ref, books, { fits });
+  const n1 = plan.phases.find((p) => p.key === 'nivel-1');
+  assert.equal(n1.books[0].id, 'warb');
+  assert.equal(n1.books[0].fit, true);
+  // A ordem do site depois do encaixe continua a mesma.
+  assert.deepEqual(n1.books.slice(1).map((x) => x.id || x.title), base.phases.find((p) => p.key === 'nivel-1').books.map((x) => x.id || x.title));
+  assert.deepEqual(plan.phases.find((p) => p.key === 'lista-de-leitura-de-historia').books.map((x) => x.id), ['sapiens']);
+  assert.ok(plan.phases.find((p) => p.key === 'paralelo').books.some((x) => x.id === 'guia'));
+  assert.equal(plan.phases.find((p) => p.kind === 'outside'), undefined);
+  // Mesmo se vier um encaixe nos Prolegômenos, ele é ignorado.
+  const forced = buildReferencePlan(ref, books, { fits: { warb: { phase: 'nivel-0', position: 0 } } });
+  assert.ok(forced.phases.find((p) => p.kind === 'outside').books.some((x) => x.id === 'warb'));
+});

@@ -518,3 +518,40 @@ details.adv[open] summary { margin-bottom: 12px; }
   .pb.missing .tags .tag, .pb.missing .tags .lbl { display: none; }
   .pb.missing .tags .btn { width: 36px; padding: 0; justify-content: center; }
 }
+.check-chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 13.5px; font-weight: 500; color: var(--ink-2); cursor: pointer; background: var(--surface); }
+.check-chip input { accent-color: var(--accent); margin: 0; }
+.check-chip:has(input:checked) { color: var(--ink); border-color: var(--accent); }
+.plan-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.track-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0 4px; }
+.phase-empty { margin-top: 12px; }
+
+/* ============================================================ plano: arrastar e soltar */
+.plan-dnd .pb[data-row-key], .pb.drag-ghost { grid-template-columns: 26px 36px 1fr auto; padding-left: 2px; position: relative; }
+.plan-dnd .reread-list .pb { grid-template-columns: 36px 1fr auto; padding-left: 8px; }
+.drag-handle, .drag-spacer { width: 26px; height: 36px; }
+.drag-handle {
+  display: grid; place-items: center; border: 0; background: none; padding: 0; border-radius: 6px;
+  color: var(--ink-3); cursor: grab; touch-action: none; opacity: .55; transition: opacity .15s, background .15s;
+}
+.drag-handle svg { width: 16px; height: 16px; fill: currentColor; stroke: none; }
+.pb:hover .drag-handle, .drag-handle:focus-visible { opacity: 1; }
+.drag-handle:hover { background: var(--surface-2); color: var(--ink); }
+.drag-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (pointer: coarse) { .drag-handle { opacity: .8; width: 30px; } .plan-dnd .pb[data-row-key], .pb.drag-ghost { grid-template-columns: 30px 36px 1fr auto; } .drag-spacer { width: 30px; } }
+.dnd-hint { margin: -10px 0 16px; }
+.inline-grip { display: inline-flex; vertical-align: -3px; }
+.inline-grip svg { width: 15px; height: 15px; fill: currentColor; stroke: none; }
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select: none; }
+.pb.dragging { opacity: .3; }
+.pb.drag-ghost {
+  position: fixed; z-index: 1000; pointer-events: none; margin: 0; background: var(--surface); border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgb(0 0 0 / .28); border: 1px solid var(--accent); opacity: .96;
+}
+.pb.drop-before::before, .pb.drop-after::after {
+  content: ''; position: absolute; left: 4px; right: 4px; height: 3px; border-radius: 3px; background: var(--accent); pointer-events: none;
+}
+.pb.drop-before::before { top: -2px; }
+.pb.drop-after::after { bottom: -2px; }
+.drop-end { box-shadow: 0 0 0 2px var(--accent) inset; }
+.pb.just-moved { animation: just-moved 1.2s var(--ease); }
+@keyframes just-moved { from { background: var(--accent-soft); } to { background: transparent; } }

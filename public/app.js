@@ -46,6 +46,7 @@ const ICONS = {
   layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   shelf: '<path d="M3 21h18M5 21V5M9 21V3M13 21V6M17 21l2.5-14"/>',
+  grip: '<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',
   send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
 };
@@ -140,6 +141,7 @@ const state = {
   classifyProgress: null,
   importDraft: null, // { from: 'lista' | 'imagem' | 'ia', books, phases, source }
   ask: { chat: [], options: [], busy: false }, // conversa da aba "Pedir à IA"
+  hideMissing: store.get('hideMissing') === '1', // plano do site: esconder livros que o leitor não tem
 };
 const books = () => state.library.books;
 const byId = (id) => books().find((b) => b.id === id);
@@ -433,23 +435,177 @@ async function generatePlan({ quiet = false } = {}) {
   }
   await withBusy(`plan:${mode}`, async () => {
     const candidates = books().filter((b) => b.ownership !== 'vendido');
-    const { plan } = await api('POST', '/api/ai/plan', { books: candidates, mode });
-    state.library.plans = { ...state.library.plans, [mode]: sanitizePlan(plan) };
+    const { plan } = await api('POST', '/api/ai/plan', { books: candidates, mode, ...(mode === 'ref' ? { fits: state.library.refFits || {} } : {}) });
+    const clean = sanitizePlan(plan);
+    // No plano do site, as mudanças manuais ficam guardadas à parte e são reaplicadas a cada montagem.
+    if (mode === 'ref') { for (const m of state.library.refMoves || []) moveRow(clean, m.id, clean.phases.find((ph) => ph.key === m.phase), m.after); updateWeeks(clean); }
+    state.library.plans = { ...state.library.plans, [mode]: clean };
     persist();
     if (!quiet) toast(`Plano (${MODES[mode]}) atualizado.`);
   });
+}
+
+// ============================================================ plano: reordenar à mão
+// Identidade de uma linha do plano: o id do livro, ou "falta:título" para livros que o site pede.
+const rowKey = (x) => (x.missing ? `falta:${x.title}` : x.id);
+
+// Move a linha `key` para a fase `target`, logo depois da linha `afterKey` (null = no início).
+function moveRow(plan, key, target, afterKey) {
+  if (!plan || !target || key === afterKey) return false;
+  const from = plan.phases.find((ph) => ph.books.some((x) => rowKey(x) === key));
+  if (!from) return false;
+  const i = from.books.findIndex((x) => rowKey(x) === key);
+  const [row] = from.books.splice(i, 1);
+  const at = afterKey == null ? 0 : target.books.findIndex((x) => rowKey(x) === afterKey) + 1;
+  target.books.splice(at > 0 || afterKey == null ? at : target.books.length, 0, { ...row, moved: true });
+  return true;
+}
+
+// Semanas por fase a partir das horas estimadas dos livros ainda não lidos.
+function updateWeeks(plan) {
+  const perDay = Number(state.settings.minutesPerDay) || 45;
+  for (const ph of plan.phases) {
+    if (['parallel', 'outside'].includes(ph.kind)) continue;
+    const h = ph.books.reduce((n, x) => n + (x.id && !isDone(byId(x.id)) ? Number(byId(x.id)?.ai?.hours) || 0 : 0), 0);
+    ph.weeks = h ? Math.max(1, Math.round((h * 60) / perDay / 7)) : null;
+  }
+}
+
+// Aplica um movimento feito pelo leitor ao plano aberto e o guarda.
+function applyManualMove(key, phaseIdx, afterKey) {
+  const plan = currentPlan();
+  const target = plan?.phases[phaseIdx];
+  if (!moveRow(plan, key, target, afterKey)) return;
+  if (plan.source === 'referencia') {
+    updateWeeks(plan);
+    if (target.key) state.library.refMoves = [...(state.library.refMoves || []), { id: key, phase: target.key, after: afterKey }].slice(-500);
+  }
+  persist();
+  renderView();
+  const handle = $(`.pb[data-row-key="${CSS.escape(key)}"] .drag-handle`);
+  if (handle) { handle.focus({ preventScroll: true }); handle.closest('.pb').classList.add('just-moved'); }
+}
+
+async function undoMoves() {
+  state.library.refMoves = [];
+  persist();
+  await generatePlan({ quiet: true });
+  toast('Mudanças manuais desfeitas.');
+}
+
+// Arrastar pela alça (mouse, toque ou caneta). Uma linha mostra onde o livro vai cair.
+let drag = null;
+function dropTargetAt(x, y) {
+  const el = document.elementFromPoint(x, y);
+  const plan = currentPlan();
+  if (!el || !plan) return null;
+  const row = el.closest('.plan-dnd .pb[data-row-key]');
+  const zone = el.closest('.plan-dnd [data-phase-idx]');
+  if (!zone) return null;
+  const phaseIdx = Number(zone.dataset.phaseIdx);
+  const ph = plan.phases[phaseIdx];
+  const others = ph.books.filter((x) => rowKey(x) !== drag.key);
+  if (row && row.dataset.rowKey !== drag.key && zone.contains(row)) {
+    const r = row.getBoundingClientRect();
+    const before = y < r.top + r.height / 2;
+    const idx = others.findIndex((x) => rowKey(x) === row.dataset.rowKey);
+    return { phaseIdx, after: before ? (idx > 0 ? rowKey(others[idx - 1]) : null) : row.dataset.rowKey, el: row, pos: before ? 'before' : 'after' };
+  }
+  if (row) return null; // sobre a própria linha arrastada
+  return { phaseIdx, after: others.length ? rowKey(others.at(-1)) : null, el: zone, pos: 'end' };
+}
+function clearDropMarks() { for (const el of $$('.drop-before, .drop-after, .drop-end')) el.classList.remove('drop-before', 'drop-after', 'drop-end'); }
+function endDrag(apply) {
+  if (!drag) return;
+  const d = drag;
+  drag = null;
+  cancelAnimationFrame(d.raf);
+  d.ghost?.remove();
+  d.row.classList.remove('dragging');
+  document.body.classList.remove('is-dragging');
+  clearDropMarks();
+  if (apply && d.target) applyManualMove(d.key, d.target.phaseIdx, d.target.after);
+}
+document.addEventListener('pointerdown', (e) => {
+  const handle = e.target.closest('.plan-dnd .drag-handle');
+  if (!handle || e.button > 0) return;
+  e.preventDefault();
+  const row = handle.closest('.pb');
+  const r = row.getBoundingClientRect();
+  const ghost = row.cloneNode(true);
+  ghost.classList.add('drag-ghost');
+  Object.assign(ghost.style, { width: `${r.width}px`, left: `${r.left}px`, top: `${r.top}px` });
+  document.body.append(ghost);
+  row.classList.add('dragging');
+  document.body.classList.add('is-dragging');
+  drag = { key: row.dataset.rowKey, row, ghost, dy: e.clientY - r.top, x: e.clientX, y: e.clientY, target: null };
+  handle.setPointerCapture?.(e.pointerId);
+  // Rola a página quando o dedo ou o mouse chega perto das bordas.
+  const tick = () => {
+    if (!drag) return;
+    const edge = 90;
+    if (drag.y < edge) window.scrollBy(0, -Math.ceil((edge - drag.y) / 6));
+    else if (drag.y > innerHeight - edge) window.scrollBy(0, Math.ceil((drag.y - innerHeight + edge) / 6));
+    drag.raf = requestAnimationFrame(tick);
+  };
+  drag.raf = requestAnimationFrame(tick);
+});
+document.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  drag.x = e.clientX;
+  drag.y = e.clientY;
+  drag.ghost.style.top = `${e.clientY - drag.dy}px`;
+  clearDropMarks();
+  drag.target = dropTargetAt(e.clientX, e.clientY);
+  if (drag.target) drag.target.el.classList.add(`drop-${drag.target.pos}`);
+});
+document.addEventListener('pointerup', () => endDrag(true));
+document.addEventListener('pointercancel', () => endDrag(false));
+
+// Teclado: com a alça em foco, ↑ e ↓ movem o livro uma posição (passando de uma fase para outra).
+function keyboardMove(handle, dir) {
+  const plan = currentPlan();
+  const key = handle.closest('.pb').dataset.rowKey;
+  const pi = plan.phases.findIndex((ph) => ph.books.some((x) => rowKey(x) === key));
+  if (pi < 0) return;
+  const books = plan.phases[pi].books.filter((x) => !(state.hideMissing && plan.source === 'referencia' && x.missing));
+  const i = books.findIndex((x) => rowKey(x) === key);
+  if (dir < 0) {
+    if (i > 0) applyManualMove(key, pi, i > 1 ? rowKey(books[i - 2]) : null);
+    else if (pi > 0) { const prev = plan.phases[pi - 1].books; applyManualMove(key, pi - 1, prev.length ? rowKey(prev.at(-1)) : null); }
+  } else if (i < books.length - 1) applyManualMove(key, pi, rowKey(books[i + 1]));
+  else if (pi < plan.phases.length - 1) applyManualMove(key, pi + 1, null);
+}
+
+// A IA encaixa na sequência do site os livros que não estão nas listas; a ordem do site não muda.
+async function fitWithAI() {
+  if (!activeProvider()) { openSettings(); return; }
+  await withBusy('fit', async () => {
+    const { fits } = await api('POST', '/api/ai/fit', { books: books().filter((b) => b.ownership !== 'vendido') });
+    const n = Object.keys(fits || {}).length;
+    state.library.refFits = { ...state.library.refFits, ...fits };
+    persist();
+    await generatePlan({ quiet: true });
+    toast(n ? `${plural(n, 'livro encaixado', 'livros encaixados')} na sequência do site.` : 'A IA não encontrou um bom lugar para esses livros na sequência.');
+  });
+}
+async function undoFits() {
+  state.library.refFits = {};
+  persist();
+  await generatePlan({ quiet: true });
+  toast('Encaixes da IA desfeitos.');
 }
 
 function sanitizePlan(plan) {
   if (!plan || typeof plan !== 'object') return null;
   const valid = new Set(books().map((b) => b.id));
   const seen = new Set();
-  const ref = (x) => (x && valid.has(x.id) ? { id: x.id, reason: str(x.reason), ...(x.role ? { role: str(x.role) } : {}) } : null);
+  const ref = (x) => (x && valid.has(x.id) ? { id: x.id, reason: str(x.reason), ...(x.role ? { role: str(x.role) } : {}), ...(x.fit ? { fit: true } : {}), ...(x.moved ? { moved: true } : {}) } : null);
   // No plano do Contra os Acadêmicos, livros que o site pede e o leitor ainda não tem.
   const row = (x) => (x?.missing && str(x.title).trim() ? { missing: true, title: str(x.title), author: str(x.author), reason: str(x.reason) } : ref(x));
   const phases = arr(plan.phases).filter((ph) => ph && typeof ph === 'object').map((ph) => ({
     name: str(ph.name) || 'Fase', goal: str(ph.goal), weeks: Number(ph.weeks) || null,
-    kind: str(ph.kind), optionalMissing: Number(ph.optionalMissing) || 0,
+    key: str(ph.key), kind: str(ph.kind), optionalMissing: Number(ph.optionalMissing) || 0,
     link: /^https:\/\/contraosacademicos\.com\.br\//.test(str(ph.link)) ? ph.link : '',
     books: arr(ph.books).map(row).filter((x) => x && (x.missing || (!seen.has(x.id) && seen.add(x.id)))),
   })).filter((ph) => ph.books.length);
@@ -497,6 +653,11 @@ function sanitizeLibrary(lib) {
   out.plans = Object.fromEntries(Object.keys(MODES).map((k) => [k, sanitizePlan(plans[k])]));
   out.suggestionSets = Object.fromEntries(Object.keys(MODES).map((k) => [k, sets[k] ? sanitizeSuggestions(sets[k]) : null]));
   out.planMode = lib?.planMode === 'ia' ? 'ia' : 'ref';
+  out.refMoves = arr(lib?.refMoves).filter((m) => m && typeof m.id === 'string' && ids.has(m.id) && typeof m.phase === 'string')
+    .map((m) => ({ id: m.id, phase: m.phase, after: typeof m.after === 'string' ? m.after : null })).slice(-500);
+  out.refFits = Object.fromEntries(Object.entries(lib?.refFits && typeof lib.refFits === 'object' ? lib.refFits : {})
+    .filter(([id, f]) => ids.has(id) && f && typeof f.phase === 'string')
+    .map(([id, f]) => [id, { phase: f.phase, position: Number(f.position) || 0, reason: str(f.reason) }]));
   delete out.plan;
   delete out.suggestions;
   return out;
@@ -747,7 +908,10 @@ function viewPlan() {
   const head = `<div class="view-head">
     <div><h1>Plano de leitura</h1><p class="lede">Ordem sugerida, o que ler em paralelo e por onde começar.</p></div>
     ${hasBooks ? `<div class="plan-controls">${planMode() === 'ref'
-      ? busyBtn('plan:ref', { idle: plan ? 'Atualizar pelo site' : 'Montar pelo site', busy: 'Montando' }, 'data-action="gen-plan"', plan ? 'btn' : 'btn primary', plan ? 'refresh' : 'layers')
+      ? `${plan ? `<label class="check-chip"><input type="checkbox" id="hide-missing" ${state.hideMissing ? 'checked' : ''}>Ocultar o que não tenho</label>` : ''}
+        ${Object.keys(state.library.refFits || {}).length ? '<button class="btn ghost sm" data-action="undo-fits">Desfazer encaixes da IA</button>' : ''}
+        ${(state.library.refMoves || []).length ? '<button class="btn ghost sm" data-action="undo-moves">Desfazer mudanças manuais</button>' : ''}
+        ${busyBtn('plan:ref', { idle: plan ? 'Atualizar pelo site' : 'Montar pelo site', busy: 'Montando' }, 'data-action="gen-plan"', plan ? 'btn' : 'btn primary', plan ? 'refresh' : 'layers')}`
       : busyBtn('plan:ia', { idle: plan ? 'Refazer com IA' : 'Gerar com IA', busy: 'Montando plano' }, 'data-action="gen-plan"', plan ? 'btn' : 'btn primary', plan ? 'refresh' : 'sparkles')}</div>` : ''}
   </div>${hasBooks ? modeSwitch('plan') : ''}`;
   if (!plan) {
@@ -768,11 +932,15 @@ function viewPlan() {
   const seq = plan.phases.filter((ph) => !TRACKS.includes(ph.kind));
   const tracks = plan.phases.filter((ph) => TRACKS.includes(ph.kind));
   const siteLinks = (ph) => (ph.link || ph.optionalMissing ? `<p class="phase-links small">${ph.link ? `<a href="${esc(ph.link)}" target="_blank" rel="noopener">${icon('external')}Ver no site</a>` : ''}${ph.optionalMissing ? `<span class="faint">+ ${plural(ph.optionalMissing, 'livro', 'livros')} de leitura complementar (opcional) no site</span>` : ''}</p>` : '');
+  const hide = state.hideMissing && plan.source === 'referencia';
+  const visible = (ph) => (hide ? ph.books.filter((x) => !x.missing) : ph.books);
   const rows = (ph, open) => {
-    const html = ph.books.map((x) => planRow(x)).join('');
+    const list = visible(ph);
+    if (!list.length) return `<p class="faint small phase-empty">${ph.books.length ? `Nenhum livro seu nesta etapa ainda · ${plural(ph.books.length, 'livro', 'livros')} no site.` : 'Nenhum livro aqui. Arraste um livro para esta fase.'}</p>`;
+    const html = list.map((x) => planRow(x, false, true)).join('');
     // Fases longas e ainda distantes ficam recolhidas.
-    return open || ph.books.length <= 8 ? `<div class="phase-books">${html}</div>`
-      : `<details class="phase-more"><summary>Ver os ${ph.books.length} livros</summary><div class="phase-books">${html}</div></details>`;
+    return open || list.length <= 8 ? `<div class="phase-books">${html}</div>`
+      : `<details class="phase-more"><summary>Ver os ${list.length} livros</summary><div class="phase-books">${html}</div></details>`;
   };
   let currentIdx = -1;
   const phases = seq.map((ph, i) => {
@@ -783,23 +951,26 @@ function viewPlan() {
     const read = ph.books.filter(done).length;
     return `<div class="phase ${cls}">
       <div class="num">${allDone ? icon('check').replace('<svg', '<svg style="width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.5"') : i + 1}</div>
-      <div class="card">
+      <div class="card" data-phase-idx="${plan.phases.indexOf(ph)}">
         <div class="phase-head">
           <div><h3>${esc(ph.name)}</h3>${ph.goal ? `<p class="goal">${esc(ph.goal)}</p>` : ''}${siteLinks(ph)}</div>
-          <div class="tags">${ph.weeks ? `<span class="tag">${icon('clock').replace('<svg', '<svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"')}~${plural(ph.weeks, 'semana', 'semanas')}</span>` : ''}<span class="tag ${allDone ? 'ok' : ''}">${read}/${ph.books.length}</span></div>
+          <div class="tags">${ph.weeks ? `<span class="tag">${icon('clock').replace('<svg', '<svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"')}~${plural(ph.weeks, 'semana', 'semanas')}</span>` : ''}<span class="tag ${allDone ? 'ok' : ''}" title="${hide ? 'lidos / seus livros nesta etapa' : 'lidos / livros da etapa'}">${read}/${visible(ph).length}</span></div>
         </div>
         ${rows(ph, currentIdx < 0 || i <= currentIdx + 1)}
       </div>
     </div>`;
   }).join('');
   const trackCards = tracks.map((ph) => `<div class="section-title"><h2>${esc(ph.name)}</h2><span class="muted small">${plural(ph.books.length, 'livro', 'livros')}</span></div>
-    <div class="card track">${ph.goal ? `<p class="goal">${esc(ph.goal)}</p>` : ''}${siteLinks(ph)}${rows(ph, true)}</div>`).join('');
+    <div class="card track" data-phase-idx="${plan.phases.indexOf(ph)}">${ph.goal ? `<p class="goal">${esc(ph.goal)}</p>` : ''}${siteLinks(ph)}
+      ${ph.kind === 'outside' ? `<div class="track-actions">${busyBtn('fit', { idle: 'Encaixar na sequência com IA', busy: 'Encaixando' }, 'data-action="fit-ai"', 'btn primary sm', 'sparkles')}
+        <span class="faint small">A IA escolhe a etapa e a posição de cada um, sem mudar a ordem do site nem tocar nos Prolegômenos.</span></div>` : ''}
+      ${rows(ph, true)}</div>`).join('');
 
   const now = plan.now?.length ? plan.now : derivedNow(plan);
   const ROLE = { principal: 'Principal', paralelo: 'Em paralelo', audiobook: 'No audiobook' };
   // Sugestões de releitura que o leitor ainda não marcou nem começou.
   const rereads = arr(plan.rereads).filter((x) => isDone(byId(x.id)));
-  return `<div class="fade-in">${head}
+  return `<div class="fade-in plan-dnd">${head}
     ${plan.summary ? `<div class="card plan-summary">${esc(plan.summary)}<div class="meta">${plan.source === 'arquivo' ? 'Importado do seu arquivo'
       : plan.source === 'referencia' ? 'Montado a partir das listas do <a href="https://contraosacademicos.com.br/lista/o-ordenamento-das-leituras/" target="_blank" rel="noopener">Contra os Acadêmicos</a>'
       : `Gerado por ${esc(plan.provider || 'IA')}${plan.reference ? ` · seguindo as listas do ${esc(plan.reference)}` : ' · critério próprio da IA'}`} · ${new Date(plan.generatedAt || Date.now()).toLocaleDateString('pt-BR')}</div></div>` : ''}
@@ -813,6 +984,7 @@ function viewPlan() {
     }).join('')}</div>` : ''}
 
     <div class="section-title"><h2>${plan.source === 'referencia' ? 'Sequência do site' : 'Fases'}</h2><span class="muted small">${plural(seq.length, 'etapa', 'etapas')}</span></div>
+    <p class="dnd-hint faint small">Para mudar um livro de lugar, arraste-o pela alça <span class="inline-grip">${icon('grip')}</span> ou use ↑ ↓ com ela selecionada.</p>
     <div class="timeline">${phases}</div>
 
     ${trackCards}
@@ -842,10 +1014,10 @@ function derivedNow(plan) {
   return [];
 }
 
-function planRow(x, rereadAction = false) {
+function planRow(x, rereadAction = false, draggable = false) {
   if (x.missing) {
-    return `<div class="pb missing">
-      <div class="cover xs ghost" aria-hidden="true">${icon('book')}</div>
+    return `<div class="pb missing" data-row-key="${esc(rowKey(x))}">
+      ${draggable ? '<span class="drag-spacer"></span>' : ''}<div class="cover xs ghost" aria-hidden="true">${icon('book')}</div>
       <div><div class="t">${esc(x.title)}</div><div class="r">${esc([x.author, x.reason].filter(Boolean).join(' · '))}</div></div>
       <div class="tags"><span class="tag warn">falta</span><button class="btn sm ghost" data-action="plan-wish" data-title="${esc(x.title)}" data-author="${esc(x.author)}" title="Adicionar à lista de desejos" aria-label="Adicionar “${esc(x.title)}” à lista de desejos">${icon('plus')}<span class="lbl">Desejos</span></button></div>
     </div>`;
@@ -855,10 +1027,11 @@ function planRow(x, rereadAction = false) {
   const st = b.reread ? '<span class="tag warn">reler</span>'
     : b.status === 'lendo' && pastReads(b) ? `<span class="tag accent">${pastReads(b) + 1}ª leitura</span>`
     : b.status !== 'quero_ler' ? `<span class="tag ${b.status === 'lido' ? 'ok' : b.status === 'lendo' ? 'accent' : ''}">${STATUS[b.status]}</span>` : (b.ownership === 'desejo' ? '<span class="tag warn">comprar</span>' : '');
-  return `<div class="pb ${isDone(b) && !rereadAction ? 'is-done' : ''}" role="button" tabindex="0" data-action="open-book" data-id="${b.id}">
+  return `<div class="pb ${isDone(b) && !rereadAction ? 'is-done' : ''}" role="button" tabindex="0" data-action="open-book" data-id="${b.id}" data-row-key="${esc(b.id)}">
+    ${draggable ? `<button class="drag-handle" data-action="drag-handle" aria-label="Mover “${esc(b.title)}”: arraste, ou use as setas para cima e para baixo" title="Arraste para mudar de lugar (ou use ↑ ↓)">${icon('grip')}</button>` : ''}
     ${coverHTML(b, { size: 'xs', badges: false })}
     <div><div class="t">${esc(b.title)}</div><div class="r">${esc(x.reason || b.author || '')}</div></div>
-    <div class="tags">${b.format === 'audiobook' ? '<span class="tag">audiobook</span>' : ''}${rereadAction
+    <div class="tags">${x.moved ? '<span class="tag" title="Você mudou este livro de lugar">manual</span>' : x.fit ? '<span class="tag accent" title="Encaixado na sequência pela IA">IA</span>' : ''}${b.format === 'audiobook' ? '<span class="tag">audiobook</span>' : ''}${rereadAction
       ? `<button class="btn sm" data-action="toggle-reread" data-id="${b.id}">${icon('refresh')}Quero reler</button>` : st}</div>
   </div>`;
 }
@@ -1620,6 +1793,10 @@ document.addEventListener('click', async (e) => {
       if (activeProvider()) classify([b.id]);
       break;
     }
+    case 'fit-ai': fitWithAI(); break;
+    case 'undo-moves': undoMoves(); break;
+    case 'drag-handle': e.stopPropagation(); break;
+    case 'undo-fits': undoFits(); break;
     case 'plan-mode':
       state.library.planMode = el.dataset.mode === 'ia' ? 'ia' : 'ref';
       persist();
@@ -1764,6 +1941,7 @@ function syncProgress(b, source) {
 document.addEventListener('change', (e) => {
   const t = e.target;
   if (t.dataset.filter) { state.filters[t.dataset.filter] = t.value; renderView(); return; }
+  if (t.id === 'hide-missing') { state.hideMissing = t.checked; store.set('hideMissing', t.checked ? '1' : '0'); renderView(); return; }
   if (t.dataset.sort !== undefined && t.matches('[data-sort]')) { state.sort = t.value; store.set('sort', t.value); renderView(); return; }
   if (t.closest('#drawer') && t.type === 'checkbox' && t.dataset.field) { updateBook(state.drawer.id, { [t.dataset.field]: t.checked }); renderAll(); return; }
   if (t.closest('#drawer') && ['title', 'author', 'cover', 'progress.current'].includes(t.dataset.field)) {
@@ -1823,6 +2001,8 @@ document.addEventListener('drop', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && drag) { endDrag(false); return; }
+  if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target.matches?.('.plan-dnd .drag-handle')) { e.preventDefault(); keyboardMove(e.target, e.key === 'ArrowUp' ? -1 : 1); return; }
   if (e.key === 'Escape' && state.drawer.id && !modal().open) closeDrawer();
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role="button"][data-action]')) { e.preventDefault(); e.target.click(); }
   if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) && state.view === 'estante') { e.preventDefault(); $('#search')?.focus(); }
