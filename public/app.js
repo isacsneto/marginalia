@@ -423,17 +423,20 @@ function applyClassification(r, provider) {
   updateBook(b.id, patch);
 }
 
-async function generatePlan() {
-  if (!activeProvider()) { openSettings(); return; }
-  const unclassified = books().filter((b) => !b.ai && b.ownership !== 'vendido').length;
-  if (unclassified) toast(`Dica: ${plural(unclassified, 'livro ainda não classificado', 'livros ainda não classificados')}; o plano fica melhor depois de classificar.`);
+async function generatePlan({ quiet = false } = {}) {
   const mode = planMode();
+  // O plano do Contra os Acadêmicos é montado direto das listas do site, sem IA.
+  if (mode === 'ia') {
+    if (!activeProvider()) { openSettings(); return; }
+    const unclassified = books().filter((b) => !b.ai && b.ownership !== 'vendido').length;
+    if (unclassified) toast(`Dica: ${plural(unclassified, 'livro ainda não classificado', 'livros ainda não classificados')}; o plano fica melhor depois de classificar.`);
+  }
   await withBusy(`plan:${mode}`, async () => {
     const candidates = books().filter((b) => b.ownership !== 'vendido');
     const { plan } = await api('POST', '/api/ai/plan', { books: candidates, mode });
     state.library.plans = { ...state.library.plans, [mode]: sanitizePlan(plan) };
     persist();
-    toast(`Plano (${MODES[mode]}) atualizado.`);
+    if (!quiet) toast(`Plano (${MODES[mode]}) atualizado.`);
   });
 }
 
@@ -442,12 +445,16 @@ function sanitizePlan(plan) {
   const valid = new Set(books().map((b) => b.id));
   const seen = new Set();
   const ref = (x) => (x && valid.has(x.id) ? { id: x.id, reason: str(x.reason), ...(x.role ? { role: str(x.role) } : {}) } : null);
+  // No plano do Contra os Acadêmicos, livros que o site pede e o leitor ainda não tem.
+  const row = (x) => (x?.missing && str(x.title).trim() ? { missing: true, title: str(x.title), author: str(x.author), reason: str(x.reason) } : ref(x));
   const phases = arr(plan.phases).filter((ph) => ph && typeof ph === 'object').map((ph) => ({
     name: str(ph.name) || 'Fase', goal: str(ph.goal), weeks: Number(ph.weeks) || null,
-    books: arr(ph.books).map(ref).filter((x) => x && !seen.has(x.id) && seen.add(x.id)),
+    kind: str(ph.kind), optionalMissing: Number(ph.optionalMissing) || 0,
+    link: /^https:\/\/contraosacademicos\.com\.br\//.test(str(ph.link)) ? ph.link : '',
+    books: arr(ph.books).map(row).filter((x) => x && (x.missing || (!seen.has(x.id) && seen.add(x.id)))),
   })).filter((ph) => ph.books.length);
   return {
-    summary: str(plan.summary), provider: str(plan.provider), source: str(plan.source), generatedAt: str(plan.generatedAt),
+    summary: str(plan.summary), provider: str(plan.provider), source: str(plan.source), generatedAt: str(plan.generatedAt), mode: str(plan.mode),
     phases,
     now: arr(plan.now).map(ref).filter(Boolean).slice(0, 3),
     parallel: arr(plan.parallel).map((p) => ({ reason: str(p?.reason), ids: arr(p?.ids).filter((id) => valid.has(id)) })).filter((p) => p.ids.length >= 2),
@@ -484,6 +491,9 @@ function sanitizeLibrary(lib) {
   // Formato antigo: um plano e um conjunto de sugestões; vão para o modo em que foram gerados.
   if (lib?.plan) plans[lib.plan.reference ? 'ref' : 'ia'] ||= lib.plan;
   if (lib?.suggestions) sets[lib.suggestions.reference ? 'ref' : 'ia'] ||= lib.suggestions;
+  // Planos "Contra os Acadêmicos" antigos eram ordenados pela IA e divergiam do site; agora esse modo
+  // é montado direto das listas, então os antigos são descartados.
+  if (plans.ref && plans.ref.source !== 'referencia') delete plans.ref;
   out.plans = Object.fromEntries(Object.keys(MODES).map((k) => [k, sanitizePlan(plans[k])]));
   out.suggestionSets = Object.fromEntries(Object.keys(MODES).map((k) => [k, sets[k] ? sanitizeSuggestions(sets[k]) : null]));
   out.planMode = lib?.planMode === 'ia' ? 'ia' : 'ref';
@@ -593,7 +603,7 @@ function renderView() {
 function planOrder() {
   const order = new Map();
   let i = 0;
-  for (const ph of currentPlan()?.phases || []) for (const x of ph.books) order.set(x.id, i++);
+  for (const ph of currentPlan()?.phases || []) for (const x of ph.books) if (x.id) order.set(x.id, i++);
   return order;
 }
 
@@ -736,43 +746,63 @@ function viewPlan() {
   const prov = activeProvider();
   const head = `<div class="view-head">
     <div><h1>Plano de leitura</h1><p class="lede">Ordem sugerida, o que ler em paralelo e por onde começar.</p></div>
-    ${hasBooks ? `<div class="plan-controls">${busyBtn(`plan:${planMode()}`, { idle: plan ? 'Refazer com IA' : 'Gerar com IA', busy: 'Montando plano' }, 'data-action="gen-plan"', plan ? 'btn' : 'btn primary', plan ? 'refresh' : 'sparkles')}</div>` : ''}
+    ${hasBooks ? `<div class="plan-controls">${planMode() === 'ref'
+      ? busyBtn('plan:ref', { idle: plan ? 'Atualizar pelo site' : 'Montar pelo site', busy: 'Montando' }, 'data-action="gen-plan"', plan ? 'btn' : 'btn primary', plan ? 'refresh' : 'layers')
+      : busyBtn('plan:ia', { idle: plan ? 'Refazer com IA' : 'Gerar com IA', busy: 'Montando plano' }, 'data-action="gen-plan"', plan ? 'btn' : 'btn primary', plan ? 'refresh' : 'sparkles')}</div>` : ''}
   </div>${hasBooks ? modeSwitch('plan') : ''}`;
   if (!plan) {
     return `<div class="fade-in">${head}<div class="empty">
       <div class="art">${icon('map')}</div>
       <h2>${hasBooks ? 'Nenhum plano ainda' : 'Adicione livros primeiro'}</h2>
-      <p>${hasBooks ? `A IA vai ordenar seus livros em fases progressivas${planMode() === 'ref' ? ' seguindo as listas do Contra os Acadêmicos' : ' pelo próprio critério'}, sugerir leituras em paralelo e dizer por onde começar, considerando ${state.settings.minutesPerDay || 45} min de leitura por dia.` : 'O plano é montado a partir da sua estante.'}</p>
-      ${hasBooks && !prov ? '<p class="small">Nenhuma IA configurada. <a href="#" data-action="open-settings">Configurar</a></p>' : ''}
+      <p>${!hasBooks ? 'O plano é montado a partir da sua estante.'
+        : planMode() === 'ref' ? 'O plano segue exatamente o programa do site: Prolegômenos, Filosofia nível a nível e as listas de área conforme o Projeto do Polímata. Mostra onde cada livro seu entra e o que falta em cada etapa. É montado direto das listas, sem IA.'
+        : `A IA vai ordenar seus livros em fases progressivas pelo próprio critério, sugerir leituras em paralelo e dizer por onde começar, considerando ${state.settings.minutesPerDay || 45} min de leitura por dia.`}</p>
+      ${hasBooks && !prov && planMode() === 'ia' ? '<p class="small">Nenhuma IA configurada. <a href="#" data-action="open-settings">Configurar</a></p>' : ''}
     </div></div>`;
   }
 
-  const done = (id) => isDone(byId(id));
-  let currentFound = false;
-  const phases = plan.phases.map((ph, i) => {
-    const allDone = ph.books.every((x) => done(x.id) || byId(x.id)?.status === 'abandonado');
+  const done = (x) => !!x.id && isDone(byId(x.id));
+  const finished = (x) => done(x) || (!!x.id && byId(x.id)?.status === 'abandonado');
+  // Trilhas sem ordem (literatura, fora das listas) ficam fora da linha do tempo.
+  const TRACKS = ['parallel', 'outside'];
+  const seq = plan.phases.filter((ph) => !TRACKS.includes(ph.kind));
+  const tracks = plan.phases.filter((ph) => TRACKS.includes(ph.kind));
+  const siteLinks = (ph) => (ph.link || ph.optionalMissing ? `<p class="phase-links small">${ph.link ? `<a href="${esc(ph.link)}" target="_blank" rel="noopener">${icon('external')}Ver no site</a>` : ''}${ph.optionalMissing ? `<span class="faint">+ ${plural(ph.optionalMissing, 'livro', 'livros')} de leitura complementar (opcional) no site</span>` : ''}</p>` : '');
+  const rows = (ph, open) => {
+    const html = ph.books.map((x) => planRow(x)).join('');
+    // Fases longas e ainda distantes ficam recolhidas.
+    return open || ph.books.length <= 8 ? `<div class="phase-books">${html}</div>`
+      : `<details class="phase-more"><summary>Ver os ${ph.books.length} livros</summary><div class="phase-books">${html}</div></details>`;
+  };
+  let currentIdx = -1;
+  const phases = seq.map((ph, i) => {
+    const allDone = ph.books.every(finished);
     let cls = '';
     if (allDone) cls = 'done';
-    else if (!currentFound) { cls = 'current'; currentFound = true; }
-    const read = ph.books.filter((x) => done(x.id)).length;
+    else if (currentIdx < 0) { cls = 'current'; currentIdx = i; }
+    const read = ph.books.filter(done).length;
     return `<div class="phase ${cls}">
       <div class="num">${allDone ? icon('check').replace('<svg', '<svg style="width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.5"') : i + 1}</div>
       <div class="card">
         <div class="phase-head">
-          <div><h3>${esc(ph.name)}</h3>${ph.goal ? `<p class="goal">${esc(ph.goal)}</p>` : ''}</div>
+          <div><h3>${esc(ph.name)}</h3>${ph.goal ? `<p class="goal">${esc(ph.goal)}</p>` : ''}${siteLinks(ph)}</div>
           <div class="tags">${ph.weeks ? `<span class="tag">${icon('clock').replace('<svg', '<svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"')}~${plural(ph.weeks, 'semana', 'semanas')}</span>` : ''}<span class="tag ${allDone ? 'ok' : ''}">${read}/${ph.books.length}</span></div>
         </div>
-        <div class="phase-books">${ph.books.map((x) => planRow(x)).join('')}</div>
+        ${rows(ph, currentIdx < 0 || i <= currentIdx + 1)}
       </div>
     </div>`;
   }).join('');
+  const trackCards = tracks.map((ph) => `<div class="section-title"><h2>${esc(ph.name)}</h2><span class="muted small">${plural(ph.books.length, 'livro', 'livros')}</span></div>
+    <div class="card track">${ph.goal ? `<p class="goal">${esc(ph.goal)}</p>` : ''}${siteLinks(ph)}${rows(ph, true)}</div>`).join('');
 
   const now = plan.now?.length ? plan.now : derivedNow(plan);
   const ROLE = { principal: 'Principal', paralelo: 'Em paralelo', audiobook: 'No audiobook' };
   // Sugestões de releitura que o leitor ainda não marcou nem começou.
   const rereads = arr(plan.rereads).filter((x) => isDone(byId(x.id)));
   return `<div class="fade-in">${head}
-    ${plan.summary ? `<div class="card plan-summary">${esc(plan.summary)}<div class="meta">${plan.source === 'arquivo' ? 'Importado do seu arquivo' : `Gerado por ${esc(plan.provider || 'IA')}`}${plan.reference ? ` · seguindo as listas do <a href="https://contraosacademicos.com.br/lista" target="_blank" rel="noopener">${esc(plan.reference)}</a>` : plan.source === 'ia' ? ' · critério próprio da IA' : ''} · ${new Date(plan.generatedAt || Date.now()).toLocaleDateString('pt-BR')}</div></div>` : ''}
+    ${plan.summary ? `<div class="card plan-summary">${esc(plan.summary)}<div class="meta">${plan.source === 'arquivo' ? 'Importado do seu arquivo'
+      : plan.source === 'referencia' ? 'Montado a partir das listas do <a href="https://contraosacademicos.com.br/lista/o-ordenamento-das-leituras/" target="_blank" rel="noopener">Contra os Acadêmicos</a>'
+      : `Gerado por ${esc(plan.provider || 'IA')}${plan.reference ? ` · seguindo as listas do ${esc(plan.reference)}` : ' · critério próprio da IA'}`} · ${new Date(plan.generatedAt || Date.now()).toLocaleDateString('pt-BR')}</div></div>` : ''}
 
     ${now.length ? `<div class="section-title"><h2>Comece por aqui</h2></div>
     <div class="start-grid">${now.map((x) => {
@@ -782,8 +812,10 @@ function viewPlan() {
         <div><span class="tag accent">${esc(ROLE[x.role] || (b.status === 'lendo' ? 'Lendo' : 'Próximo'))}</span><h3>${esc(b.title)}</h3><p>${esc(x.reason || b.ai?.why || '')}</p></div></div>`;
     }).join('')}</div>` : ''}
 
-    <div class="section-title"><h2>Fases</h2><span class="muted small">${plural(plan.phases.length, 'fase', 'fases')}</span></div>
+    <div class="section-title"><h2>${plan.source === 'referencia' ? 'Sequência do site' : 'Fases'}</h2><span class="muted small">${plural(seq.length, 'etapa', 'etapas')}</span></div>
     <div class="timeline">${phases}</div>
+
+    ${trackCards}
 
     ${plan.parallel?.length ? `<div class="section-title"><h2>Bons pares para ler em paralelo</h2></div>
     <div class="pairs">${plan.parallel.map((p) => {
@@ -804,13 +836,20 @@ function derivedNow(plan) {
   const reading = books().filter((b) => b.status === 'lendo').map((b) => ({ id: b.id }));
   if (reading.length) return reading.slice(0, 3);
   for (const ph of plan.phases) {
-    const next = ph.books.find((x) => !isDone(byId(x.id)) && byId(x.id)?.status !== 'abandonado');
+    const next = ph.books.find((x) => x.id && !isDone(byId(x.id)) && byId(x.id)?.status !== 'abandonado');
     if (next) return [{ id: next.id, reason: next.reason || `Primeiro livro pendente da fase “${ph.name}”.` }];
   }
   return [];
 }
 
 function planRow(x, rereadAction = false) {
+  if (x.missing) {
+    return `<div class="pb missing">
+      <div class="cover xs ghost" aria-hidden="true">${icon('book')}</div>
+      <div><div class="t">${esc(x.title)}</div><div class="r">${esc([x.author, x.reason].filter(Boolean).join(' · '))}</div></div>
+      <div class="tags"><span class="tag warn">falta</span><button class="btn sm ghost" data-action="plan-wish" data-title="${esc(x.title)}" data-author="${esc(x.author)}" title="Adicionar à lista de desejos" aria-label="Adicionar “${esc(x.title)}” à lista de desejos">${icon('plus')}<span class="lbl">Desejos</span></button></div>
+    </div>`;
+  }
   const b = byId(x.id);
   if (!b) return '';
   const st = b.reread ? '<span class="tag warn">reler</span>'
@@ -1569,6 +1608,18 @@ document.addEventListener('click', async (e) => {
     case 'classify-one': classify([id]); break;
     case 'gen-plan': generatePlan(); break;
     case 'suggest': suggestBooks(); break;
+    case 'plan-wish': {
+      e.stopPropagation();
+      const b = newBook({ title: el.dataset.title, author: el.dataset.author || '', ownership: 'desejo' });
+      state.library.books.push(b);
+      persist();
+      toast(`“${b.title}” na lista de desejos.`);
+      fillCovers();
+      loadRefMatches();
+      generatePlan({ quiet: true });
+      if (activeProvider()) classify([b.id]);
+      break;
+    }
     case 'plan-mode':
       state.library.planMode = el.dataset.mode === 'ia' ? 'ia' : 'ref';
       persist();

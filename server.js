@@ -8,7 +8,7 @@ import { exec } from 'node:child_process';
 import { detectProviders, runAI, DEFAULT_MODELS } from './lib/ai.js';
 import * as prompts from './lib/prompts.js';
 import { parseMarkdownLibrary } from './lib/importer.js';
-import { refreshReference, loadReference, referenceStatus, referenceContext, bookReferences, REFERENCE } from './lib/reference.js';
+import { refreshReference, loadReference, referenceStatus, referenceContext, bookReferences, buildReferencePlan, REFERENCE } from './lib/reference.js';
 import { autoCover, coverCandidates, coverFromUrl, coverFromUpload, removeCover, coversDir } from './lib/covers.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -122,17 +122,11 @@ const slim = (b) => ({
 
 // Contexto das listas de referência para um prompt (null se desligado ou indisponível).
 // Atualiza o cache se tiver mais de 30 dias; sem rede, usa o que já foi baixado.
-async function referenceFor(settings, books, opts) {
-  if (!settings.referenceLists) return null;
-  const ref = await refreshReference(DATA).catch(() => loadReference(DATA));
-  const ctx = referenceContext(ref, books, opts);
-  return ctx?.text ? ctx : null;
-}
-
-// No modo "ref" a referência é obrigatória: sem ela o resultado seria um plano da IA no lugar errado.
-async function referenceRequired(settings, books, opts) {
+// As listas baixadas (renova se tiverem mais de 30 dias; sem rede, usa o cache). No modo "ref" elas são
+// obrigatórias: sem elas o resultado seria um plano da IA no lugar errado.
+async function referenceRequired(settings) {
   if (!settings.referenceLists) throw Object.assign(new Error('As listas de referência estão desligadas nos Ajustes.'), { status: 400 });
-  const ref = await referenceFor(settings, books, opts);
+  const ref = await refreshReference(DATA).catch(() => loadReference(DATA));
   if (!ref) throw Object.assign(new Error('Não consegui carregar as listas do Contra os Acadêmicos. Verifique a internet e use “Atualizar listas” nos Ajustes.'), { status: 503 });
   return ref;
 }
@@ -202,17 +196,18 @@ const routes = {
 
   'POST /api/ai/plan': async (req) => {
     // mode "ref": segue as listas de referência; "ia": critério próprio da IA.
+    // No modo "ref" a ordem vem direto da estrutura do site (sem IA), para não divergir dele.
     const { books, mode } = await body(req);
     const settings = await loadSettings();
-    const ref = mode === 'ia' ? null : await referenceRequired(settings, books);
-    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.plan(books.map(slim), settings, ref), effort: 'medium' }, settings);
-    return { plan: { ...data, provider, generatedAt: new Date().toISOString(), source: 'ia', mode: ref ? 'ref' : 'ia', reference: ref ? REFERENCE.name : '' } };
+    if (mode !== 'ia') return { plan: buildReferencePlan(await referenceRequired(settings), books, settings) };
+    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.plan(books.map(slim), settings), effort: 'medium' }, settings);
+    return { plan: { ...data, provider, generatedAt: new Date().toISOString(), source: 'ia', mode: 'ia', reference: '' } };
   },
 
   'POST /api/ai/suggest': async (req) => {
     const { books, mode } = await body(req);
     const settings = await loadSettings();
-    const ref = mode === 'ia' ? null : await referenceRequired(settings, books, { candidates: 70 });
+    const ref = mode === 'ia' ? null : referenceContext(await referenceRequired(settings), books, { candidates: 40 });
     const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.suggest(books.map(slim), ref), effort: 'medium' }, settings);
     return { suggestions: { ...data, provider, generatedAt: new Date().toISOString(), mode: ref ? 'ref' : 'ia', reference: ref ? REFERENCE.name : '' } };
   },

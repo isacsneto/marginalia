@@ -498,3 +498,23 @@ details.adv[open] summary { margin-bottom: 12px; }
 .mode-switch .segmented { align-self: flex-start; }
 .mode-switch .segmented button { padding: 8px 14px; font-size: 13.5px; }
 @media (max-width: 520px) { .mode-switch .segmented { align-self: stretch; } }
+
+/* ============================================================ plano do Contra os Acadêmicos */
+.pb.missing { cursor: default; }
+.pb.missing:hover { background: transparent; }
+.pb.missing .t { font-weight: 500; color: var(--ink-2); }
+.cover.ghost { aspect-ratio: 2 / 3; display: grid; place-items: center; background: transparent; border: 1.5px dashed var(--line); box-shadow: none; color: var(--ink-3); }
+.cover.ghost svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.phase-links { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 6px; }
+.phase-links a { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); text-decoration: none; font-weight: 500; }
+.phase-links a:hover { text-decoration: underline; }
+.phase-links svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+.phase-more { margin-top: 12px; }
+.phase-more summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.phase-more[open] summary { margin-bottom: 4px; }
+.card.track { padding: 18px 20px; }
+.card.track .goal { color: var(--ink-2); font-size: 14px; }
+@media (max-width: 520px) {
+  .pb.missing .tags .tag, .pb.missing .tags .lbl { display: none; }
+  .pb.missing .tags .btn { width: 36px; padding: 0; justify-content: center; }
+}
