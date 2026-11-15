@@ -283,7 +283,8 @@ function coverHTML(b, { size = '', badges = true } = {}) {
 
 // Capas automáticas: o servidor busca (Bing Imagens, Google Books, Open Library), valida
 // a proporção e salva uma cópia local em data/covers. coverV marca livros já processados.
-const COVER_V = 2;
+// 3: o Bing mudou a página de busca; livros que ficaram sem capa são buscados de novo.
+const COVER_V = 3;
 const isLocalCover = (c) => typeof c === 'string' && c.startsWith('/covers/');
 let coverQueueRunning = false;
 async function fillCovers() {
