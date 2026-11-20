@@ -1,4 +1,8 @@
 // Marginália: interface em JS puro, sem build. Estado único + render por string.
+import {
+  localDay, addDays, daysBetween, isDay, applyDelta, byDay, streak, RANGES, rangeOf, series, totals,
+  pagesPerHour, finishedReadings, forecast,
+} from './stats.js';
 
 // ============================================================ utilidades
 const $ = (s, el = document) => el.querySelector(s);
@@ -71,13 +75,17 @@ const NOTE_FIELDS = [
 
 function newBook(p = {}) {
   const now = new Date().toISOString();
-  return {
+  const b = {
     id: uid(), title: '', author: '', format: 'fisico', ownership: 'tenho', status: 'quero_ler',
     progress: { current: 0, total: null }, rating: 0, cover: null, coverTried: false,
     notes: {}, purchase: {}, sale: {}, loan: {}, ai: null, guide: null, readings: [], reread: false,
     userPhase: null, priority: false, startedAt: null, finishedAt: null, createdAt: now, updatedAt: now,
     ...p,
   };
+  // progress.mark: última posição já anotada no registro de leitura (o que veio antes não é contado).
+  b.progress = { current: 0, total: null, ...b.progress };
+  b.progress.mark ??= Number(b.progress.current) || 0;
+  return b;
 }
 const isAudio = (b) => b.format === 'audiobook';
 // Duas bases para o plano e as sugestões, cada uma guardada à parte:
@@ -142,6 +150,7 @@ const state = {
   importDraft: null, // { from: 'lista' | 'imagem' | 'ia', books, phases, source }
   ask: { chat: [], options: [], busy: false }, // conversa da aba "Pedir à IA"
   hideMissing: store.get('hideMissing') === '1', // plano do site: esconder livros que o leitor não tem
+  rhythm: { range: store.get('rhythmRange') || 'mes', metric: store.get('rhythmMetric') || 'pages' },
 };
 const books = () => state.library.books;
 const byId = (id) => books().find((b) => b.id === id);
@@ -210,6 +219,24 @@ function updateBook(id, patch) {
   Object.assign(b, patch, { updatedAt: new Date().toISOString() });
   persist();
 }
+
+// ============================================================ registro de leitura
+// Cada avanço no progresso (botão +10, painel, "Terminei") entra no registro do dia;
+// sessões cronometradas ou registradas à mão também guardam o tempo gasto.
+const unitOf = (b) => (isAudio(b) ? 'min' : 'pag');
+const logOf = () => (state.library.log ||= []);
+function trackProgress(b) {
+  if (!b?.progress) return;
+  const cur = Number(b.progress.current) || 0;
+  const mark = b.progress.mark;
+  b.progress.mark = cur;
+  persist();
+  if (mark == null || !Number.isFinite(Number(mark))) return;
+  const delta = cur - Number(mark);
+  if (delta) state.library.log = applyDelta(logOf(), { book: b.id, delta, date: localDay(), unit: unitOf(b), id: uid() });
+}
+// Posição atual vira o novo ponto de partida, sem contar nada (ex.: troca de formato, releitura).
+function resetMark(b) { if (b?.progress) b.progress.mark = Number(b.progress.current) || 0; }
 function setPath(obj, path, value) {
   const keys = path.split('.');
   let o = obj;
@@ -629,11 +656,14 @@ function sanitizeLibrary(lib) {
     let id = typeof b.id === 'string' && /^[\w-]{1,40}$/.test(b.id) && !ids.has(b.id) ? b.id : uid();
     ids.add(id);
     const base = newBook();
+    const progress = { current: 0, total: null, ...(b.progress && typeof b.progress === 'object' ? b.progress : {}) };
+    // Livros de antes do registro de leitura: a posição atual é o ponto de partida.
+    progress.mark = progress.mark != null && Number.isFinite(Number(progress.mark)) ? Number(progress.mark) : Number(progress.current) || 0;
     return {
       ...base, ...b, id, title: str(b.title), author: str(b.author),
       format: FORMAT[b.format] ? b.format : 'fisico', ownership: OWNERSHIP[b.ownership] ? b.ownership : 'tenho',
       status: STATUS[b.status] ? b.status : 'quero_ler',
-      progress: { ...base.progress, ...(b.progress && typeof b.progress === 'object' ? b.progress : {}) },
+      progress,
       notes: b.notes && typeof b.notes === 'object' ? b.notes : {},
       readings: arr(b.readings).filter((r) => r && typeof r === 'object').map((r) => ({
         startedAt: str(r.startedAt).slice(0, 10), finishedAt: str(r.finishedAt).slice(0, 10), rating: clamp(Number(r.rating) || 0, 0, 5),
@@ -659,6 +689,16 @@ function sanitizeLibrary(lib) {
   out.refFits = Object.fromEntries(Object.entries(lib?.refFits && typeof lib.refFits === 'object' ? lib.refFits : {})
     .filter(([id, f]) => ids.has(id) && f && typeof f.phase === 'string')
     .map(([id, f]) => [id, { phase: f.phase, position: Number(f.position) || 0, reason: str(f.reason) }]));
+  out.log = arr(lib?.log).filter((e) => e && ids.has(e.book) && isDay(e.date)).map((e) => {
+    const x = { id: typeof e.id === 'string' && /^[\w-]{1,40}$/.test(e.id) ? e.id : uid(), book: e.book, date: e.date,
+      amount: Math.max(0, Math.round(Number(e.amount) || 0)), unit: e.unit === 'min' ? 'min' : 'pag' };
+    const minutes = Math.max(0, Math.round(Number(e.minutes) || 0));
+    if (minutes) x.minutes = minutes;
+    if (e.auto) x.auto = true;
+    return x;
+  }).filter((e) => e.amount > 0 || e.minutes > 0);
+  const t = lib?.timer;
+  out.timer = t && ids.has(t.book) && !Number.isNaN(Date.parse(t.start)) ? { book: t.book, start: str(t.start) } : null;
   delete out.plan;
   delete out.suggestions;
   return out;
@@ -751,7 +791,11 @@ function renderView() {
   for (const a of $$('.tabs a')) a.classList.toggle('active', a.dataset.view === state.view);
   const changedView = view.dataset.view !== state.view;
   view.dataset.view = state.view;
-  view.innerHTML = state.view === 'plano' ? viewPlan() : state.view === 'descobrir' ? viewDiscover() : viewShelf();
+  view.innerHTML = state.view === 'plano' ? viewPlan() : state.view === 'descobrir' ? viewDiscover() : state.view === 'ritmo' ? viewRhythm() : viewShelf();
+  // Calendário: começa mostrando as semanas mais recentes (no celular ele rola na horizontal).
+  const heat = $('.heat-scroll');
+  if (heat) heat.scrollLeft = heat.scrollWidth;
+  renderTimerBar();
   // A animação de entrada só roda ao trocar de seção, não a cada atualização.
   if (!changedView) view.firstElementChild?.classList.remove('fade-in');
   if (restoreSearch) {
@@ -837,7 +881,7 @@ function viewShelf() {
       ${busyBtn('classify', { idle: 'Classificar', busy: 'Classificando' }, 'data-action="classify-pending"', 'btn primary sm')}</div>` : ''}
 
     ${reading.length ? `<div class="section-title"><h2>Lendo agora</h2></div>
-      <div class="now-row">${reading.map(nowCard).join('')}</div>` : ''}
+      <div class="now-row">${reading.map((b) => nowCard(b)).join('')}</div>` : ''}
 
     <div class="toolbar">
       <label class="search">${icon('search')}<input id="search" type="search" placeholder="Buscar título, autor, tema…" value="${esc(f.q)}" autocomplete="off"></label>
@@ -868,7 +912,13 @@ function bookTile(b, size = '') {
   </button>`;
 }
 
-function nowCard(b) {
+function timerBtn(b, cls = 'btn sm ghost') {
+  const on = state.library.timer?.book === b.id;
+  return on ? `<button class="${cls} timing" data-action="timer-stop" data-id="${b.id}" title="Parar e registrar a sessão">${icon('clock')}<span>Parar</span></button>`
+    : `<button class="${cls}" data-action="timer-start" data-id="${b.id}" title="Cronometrar uma sessão de leitura" aria-label="Cronometrar">${icon('clock')}<span>Cronometrar</span></button>`;
+}
+
+function nowCard(b, extra = '') {
   const p = pct(b);
   const step = isAudio(b) ? 30 : 10;
   return `<div class="card now-card" role="button" tabindex="0" data-action="open-book" data-id="${b.id}">
@@ -879,8 +929,10 @@ function nowCard(b) {
       <div class="progress-line">
         <div class="meter"><span style="width:${p}%"></span></div>
         <div class="row"><span>${p}%</span><span>${fmtAmount(b, b.progress?.current || 0)}${b.progress?.total ? ` / ${fmtAmount(b, b.progress.total)}` : ''} ${isAudio(b) ? '' : 'pág.'}</span></div>
+        ${extra}
         <div class="quick">
           <button class="btn sm" data-action="bump" data-id="${b.id}" data-step="${step}">+${step} ${unitLabel(b)}</button>
+          ${timerBtn(b)}
           <button class="btn sm ghost" data-action="finish" data-id="${b.id}">${icon('check')}Terminei</button>
         </div>
       </div>
@@ -1150,6 +1202,8 @@ function drawerOverview(b) {
         <label class="input-group"><input class="input" type="number" min="0" value="${b.progress?.current || 0}" data-field="progress.current" data-number aria-label="Atual"><span class="faint small">${isAudio(b) ? 'min ouvidos' : 'pág. lidas'}</span></label>
         <label class="input-group"><input class="input" type="number" min="0" value="${total || ''}" placeholder="total" data-field="progress.total" data-number aria-label="Total"><span class="faint small">${isAudio(b) ? 'min no total' : 'pág. no total'}</span></label>
       </div>
+      ${b.status !== 'lido' && b.status !== 'abandonado' ? `<div class="session-actions">${timerBtn(b, 'btn sm')}
+        <button class="btn sm ghost" data-action="session-open" data-id="${b.id}">${icon('pen')}Registrar sessão</button></div>` : ''}
     </div>
 
     <div><span class="field-label">Formato</span>${segmented('format', FORMAT, b.format, FORMAT_ICON)}</div>
@@ -1260,7 +1314,7 @@ function startReread(b) {
   updateBook(b.id, {
     readings: [...arr(b.readings), { startedAt: b.startedAt || '', finishedAt: b.finishedAt || '', rating: b.rating || 0 }],
     status: 'lendo', startedAt: today, finishedAt: null, reread: false,
-    progress: { ...b.progress, current: 0 },
+    progress: { ...b.progress, current: 0, mark: 0 },
   });
   toast(`Começando a ${pastReads(byId(b.id)) + 1}ª leitura de “${b.title}”.`);
 }
@@ -1279,7 +1333,11 @@ function setStatus(b, status) {
     patch.finishedAt = b.finishedAt || today;
     if (b.progress?.total) patch.progress = { ...b.progress, current: b.progress.total };
   }
+  const wasReading = b.status === 'lendo' || b.status === 'pausado';
   updateBook(b.id, patch);
+  // "Terminei" durante a leitura conta as páginas que faltavam como lidas hoje; marcar como lido
+  // um livro que nem tinha começado (lido antes de usar o app) não entra no registro.
+  if (status === 'lido') { if (wasReading) trackProgress(byId(b.id)); else resetMark(byId(b.id)); }
 }
 
 // ============================================================ modais
@@ -1745,6 +1803,8 @@ document.addEventListener('click', async (e) => {
     case 'set': {
       const b = byId(state.drawer.id);
       const { field, value } = el.dataset;
+      // Páginas e minutos não se comparam: antes de trocar o formato, anota o pendente na unidade antiga.
+      if (field === 'format') trackProgress(b);
       if (field === 'status') setStatus(b, value);
       else updateBook(b.id, { [field]: value });
       renderAll();
@@ -1772,10 +1832,37 @@ document.addEventListener('click', async (e) => {
       const step = Number(el.dataset.step);
       const total = Number(b.progress?.total) || Infinity;
       updateBook(id, { progress: { ...b.progress, current: Math.min(total, (Number(b.progress?.current) || 0) + step) } });
+      trackProgress(byId(id));
       renderAll();
       break;
     }
     case 'finish': e.stopPropagation(); setStatus(byId(id), 'lido'); renderAll(); toast(`“${byId(id).title}” concluído. 🎉`); break;
+    case 'timer-start': e.stopPropagation(); startTimer(id); break;
+    case 'timer-stop': {
+      e.stopPropagation();
+      const t = state.library.timer;
+      if (t) openSession({ id: t.book, fromTimer: true, minutes: Math.max(1, Math.round(timerElapsed() / 60000)) });
+      break;
+    }
+    case 'timer-cancel': {
+      if (el.dataset.armed !== '1') {
+        el.dataset.armed = '1';
+        el.classList.add('armed');
+        el.title = 'Clique de novo para descartar';
+        toast('Clique no × de novo para descartar a sessão sem registrar.');
+        setTimeout(() => { if (el.isConnected) { el.dataset.armed = ''; el.classList.remove('armed'); el.title = 'Descartar a sessão'; } }, 3000);
+        return;
+      }
+      state.library.timer = null;
+      persist();
+      renderAll();
+      toast('Sessão descartada.');
+      break;
+    }
+    case 'session-open': e.stopPropagation(); openSession({ id }); break;
+    case 'log-remove': state.library.log = logOf().filter((x) => x.id !== id); persist(); renderView(); break;
+    case 'rhythm-range': state.rhythm.range = el.dataset.value; store.set('rhythmRange', el.dataset.value); renderView(); break;
+    case 'rhythm-metric': state.rhythm.metric = el.dataset.value; store.set('rhythmMetric', el.dataset.value); renderView(); break;
     case 'filter': state.filters[el.dataset.key] = el.dataset.value; renderView(); break;
     case 'clear-filters': state.filters = { q: '', status: 'todos', format: '', ownership: '', category: '' }; renderView(); break;
     case 'classify-pending': classify(books().filter((b) => !b.ai).map((b) => b.id)); break;
@@ -1822,6 +1909,8 @@ document.addEventListener('click', async (e) => {
       if (el.dataset.armed !== '1') { el.dataset.armed = '1'; el.innerHTML = `${icon('trash')}Confirmar exclusão`; setTimeout(() => { if (el.isConnected) { el.dataset.armed = ''; el.innerHTML = `${icon('trash')}Excluir livro`; } }, 3000); return; }
       const b = byId(id);
       state.library.books = books().filter((x) => x.id !== id);
+      state.library.log = logOf().filter((x) => x.book !== id);
+      if (state.library.timer?.book === id) state.library.timer = null;
       state.library.plans = Object.fromEntries(Object.entries(state.library.plans || {}).map(([k, v]) => [k, sanitizePlan(v)]));
       if (isLocalCover(b.cover)) api('POST', '/api/cover/delete', { id }).catch(() => {});
       persist();
@@ -1953,6 +2042,13 @@ document.addEventListener('change', (e) => {
     if (t.dataset.field === 'progress.current') t.value = b.progress.current || 0;
     renderView();
   }
+  // O registro só anota ao confirmar o número (sair do campo, Enter, soltar o controle deslizante),
+  // não a cada tecla: digitar "150" passaria por 1 e 15 no caminho.
+  if (t.closest('#drawer') && (t.dataset.field === 'progress.current' || t.dataset.field === 'progress.total')) trackProgress(byId(state.drawer.id));
+  if (t.form?.id === 'session' && t.name === 'book') {
+    const f = t.form;
+    openSession({ id: t.value, minutes: f.elements.minutes.value, date: f.elements.date.value, fromTimer: f.dataset.timer === '1' });
+  }
   if (t.name === 'provider') { for (const l of $$('.provider')) l.classList.toggle('sel', l.contains(t)); }
   if (t.id === 'restore' && t.files[0]) restoreBackup(t.files[0]);
   if (t.id === 'img-input' && t.files.length) addPendingImages(t.files);
@@ -1965,6 +2061,7 @@ document.addEventListener('submit', (e) => {
   if (f.id === 'add-one') addOne(f);
   if (f.id === 'ask-form') askAI(f.text.value);
   if (f.id === 'settings') saveSettings(f);
+  if (f.id === 'session') saveSession(f);
   if (f.id === 'cover-search' && state.coverPicker) openCoverPicker(state.coverPicker.id, f.q.value.trim() || undefined);
   if (f.id === 'cover-url') {
     const url = f.url.value.trim();
@@ -2022,6 +2119,300 @@ let modalPressOnBackdrop = false;
 modal().addEventListener('mousedown', (e) => { modalPressOnBackdrop = e.target === modal(); });
 modal().addEventListener('click', (e) => { if (e.target === modal() && modalPressOnBackdrop) closeModal(); });
 
+// ============================================================ view: ritmo
+const fmtNum = (n) => Math.round(n).toLocaleString('pt-BR');
+function fmtMin(m) {
+  const v = Math.round(m || 0), h = Math.floor(v / 60), r = v % 60;
+  return h ? `${h}h${r ? String(r).padStart(2, '0') : ''}` : `${r} min`;
+}
+const METRICS = {
+  pages: { label: 'Páginas', title: 'Páginas lidas', fmt: (v) => `${fmtNum(v)} pág.` },
+  audio: { label: 'Áudio', title: 'Minutos ouvidos', fmt: fmtMin },
+  time: { label: 'Tempo', title: 'Tempo de leitura', fmt: fmtMin },
+};
+const MONTH_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const dayDate = (d) => new Date(`${d}T12:00:00`);
+function shortDate(d) {
+  const sameYear = d.slice(0, 4) === localDay().slice(0, 4);
+  return dayDate(d).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) }).replace(/\./g, '').replace(/ de /g, ' ');
+}
+const longDate = (d) => dayDate(d).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '').replace(/ de /g, ' ');
+function dayLabel(d) {
+  const today = localDay();
+  return d === today ? 'Hoje' : d === addDays(today, -1) ? 'Ontem' : longDate(d);
+}
+
+function viewRhythm() {
+  const all = books();
+  if (!all.length) return emptyShelf();
+  const today = localDay();
+  const log = logOf().filter((e) => byId(e.book));
+  const days = byDay(log);
+  const done = finishedReadings(all);
+  const first = [...log.map((e) => e.date), ...done.map((r) => r.finishedAt).filter(Boolean)].sort()[0] || today;
+  const rk = RANGES[state.rhythm.range] ? state.rhythm.range : 'mes';
+  const range = rangeOf(rk, today, first);
+  const span = daysBetween(rk === 'tudo' && first < today ? first : range.from, today) + 1;
+  const t = totals(days, range.from, range.to);
+  const avail = ['pages', ...(log.some((e) => e.unit === 'min') ? ['audio'] : []), ...(log.some((e) => e.minutes || e.unit === 'min') ? ['time'] : [])];
+  const metric = avail.includes(state.rhythm.metric) ? state.rhythm.metric : 'pages';
+  const M = METRICS[metric];
+  const doneIn = done.filter((r) => r.finishedAt && r.finishedAt >= range.from && r.finishedAt <= range.to);
+  const timed = doneIn.filter((r) => r.days);
+  const avgDays = timed.length ? Math.round(timed.reduce((s, r) => s + r.days, 0) / timed.length) : null;
+  const pph = pagesPerHour(log, range.from, range.to) ?? pagesPerHour(log);
+  const st = streak(days, today);
+  const reading = all.filter((b) => b.status === 'lendo');
+  const timeSub = [t.audio ? `${fmtMin(t.audio)} ouvidos` : '', pph ? `~${fmtNum(pph)} pág. por hora` : ''].filter(Boolean).join(' · ');
+
+  return `<div class="fade-in">
+    <div class="view-head">
+      <div><h1>Seu ritmo</h1><p class="lede">Quanto você leu, em quanto tempo e em que ritmo.</p></div>
+      <button class="btn" data-action="session-open">${icon('pen')}Registrar sessão</button>
+    </div>
+    <div class="rhythm-filters"><div class="segmented" role="tablist" aria-label="Período">${Object.entries(RANGES).map(([k, v]) => `<button role="tab" class="${rk === k ? 'active' : ''}" aria-selected="${rk === k}" data-action="rhythm-range" data-value="${k}">${v}</button>`).join('')}</div></div>
+
+    ${log.length ? '' : `<div class="banner">${icon('clock')}<div class="txt"><b>O registro começa agora.</b> Cada avanço que você marcar (no +10, no painel do livro ou em “Terminei”) entra aqui no dia em que aconteceu. Para saber também quanto tempo leu, use <b>Cronometrar</b> ou <b>Registrar sessão</b>.</div></div>`}
+
+    <div class="stats">
+      <div class="card stat"><div class="label">Páginas lidas</div><div class="value">${fmtNum(t.pages)}</div>
+        <div class="sub">${t.pages ? `≈ ${fmtNum(Math.max(1, t.pages / span))} por dia` : 'nenhuma no período'}</div></div>
+      <div class="card stat"><div class="label">Tempo de leitura</div><div class="value">${t.time ? fmtMin(t.time) : '—'}</div>
+        <div class="sub">${timeSub || 'cronometre uma sessão para medir'}</div></div>
+      <div class="card stat"><div class="label">Dias com leitura</div><div class="value">${t.active}<span class="faint" style="font-size:18px"> / ${span}</span></div>
+        <div class="sub">${st ? `sequência de ${plural(st, 'dia', 'dias')}` : 'nenhuma sequência em andamento'}</div></div>
+      <div class="card stat"><div class="label">Concluídos</div><div class="value">${doneIn.length}</div>
+        <div class="sub">${avgDays ? `em média ${plural(avgDays, 'dia', 'dias')} por livro` : doneIn.length ? 'sem data de início' : 'nenhum no período'}</div></div>
+    </div>
+
+    <div class="card chart-card">
+      <div class="chart-head"><h2>${M.title} por ${range.bucket === 'day' ? 'dia' : 'mês'}</h2>
+        ${avail.length > 1 ? `<div class="segmented" role="tablist" aria-label="Métrica">${avail.map((k) => `<button role="tab" class="${k === metric ? 'active' : ''}" aria-selected="${k === metric}" data-action="rhythm-metric" data-value="${k}">${METRICS[k].label}</button>`).join('')}</div>` : ''}</div>
+      ${barChart(series(days, range, metric), M, range.bucket === 'day' ? today : today.slice(0, 7))}
+    </div>
+
+    <div class="card chart-card">
+      <div class="chart-head"><h2>Calendário</h2><span class="faint small">${M.title.toLowerCase()} · últimos 12 meses</span></div>
+      ${heatmap(days, metric, M, today)}
+    </div>
+
+    ${reading.length ? `<div class="section-title"><h2>Lendo agora</h2><span class="faint small">ritmo das últimas 2 semanas</span></div>
+      <div class="now-row">${reading.map((b) => nowCard(b, forecastLine(b, log, today))).join('')}</div>` : ''}
+
+    <div class="section-title"><h2>Concluídos</h2><span class="faint small">${rk === 'tudo' ? 'desde o início' : RANGES[rk].toLowerCase()}</span></div>
+    ${doneList(doneIn, done.length)}
+    ${log.length ? logList(log) : ''}
+  </div>`;
+}
+
+function niceStep(max) {
+  const raw = max / 3;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const n = raw / mag;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+}
+// Barras em HTML (não SVG): o texto mantém o tamanho em qualquer largura de tela.
+function barChart(points, M, currentKey) {
+  const max = Math.max(0, ...points.map((p) => p.value));
+  if (!max) return '<div class="chart-empty faint small">Nenhum registro neste período.</div>';
+  const step = Math.max(1, niceStep(max));
+  const top = Math.ceil(max / step) * step;
+  const ticks = [];
+  for (let v = step; v <= top; v += step) ticks.push(v);
+  const every = points.length <= 12 ? 1 : Math.ceil(points.length / 8);
+  const best = points.reduce((a, p) => (p.value > a.value ? p : a));
+  const summary = `${M.title}: total ${M.fmt(points.reduce((s, p) => s + p.value, 0))}; maior marca ${M.fmt(best.value)} (${best.long}).`;
+  return `<div class="bars-chart" style="--n:${points.length}" role="img" aria-label="${esc(summary)}">
+    <div class="bars-plot">
+      ${ticks.map((v) => `<div class="tick" style="bottom:${(v / top) * 100}%"><span>${esc(M.fmt(v))}</span></div>`).join('')}
+      <div class="bars">${points.map((p) => `<div class="bar${p.key === currentKey ? ' current' : ''}" data-tip="${esc(`${p.long}: ${p.value ? M.fmt(p.value) : 'nada'}`)}"><span style="height:${(p.value / top) * 100}%"></span></div>`).join('')}</div>
+    </div>
+    <div class="bars-x" aria-hidden="true">${points.map((p, i) => `<span>${(points.length - 1 - i) % every === 0 ? esc(p.label) : ''}</span>`).join('')}</div>
+  </div>`;
+}
+
+// Calendário de 53 semanas (colunas = semanas, linhas = dom…sáb); a cor vai de clara a escura.
+function heatmap(days, metric, M, today) {
+  const start = addDays(today, -(52 * 7 + dayDate(today).getDay()));
+  const cells = [];
+  let max = 0;
+  for (let d = start; d <= today; d = addDays(d, 1)) {
+    const v = days[d]?.[metric] || 0;
+    if (v > max) max = v;
+    cells.push([d, v]);
+  }
+  const level = (v) => (v > 0 ? Math.max(1, Math.min(4, Math.ceil((v / max) * 4))) : 0);
+  const weeks = Math.ceil(cells.length / 7);
+  const months = cells.map(([d], i) => [d, i]).filter(([d]) => d.endsWith('-01')).map(([d, i]) => [Math.floor(i / 7), d]);
+  return `<div class="heat-scroll"><div class="heat-wrap" style="--w:${weeks}">
+      <div class="heat-months" aria-hidden="true">${months.map(([w, d]) => `<span style="grid-column:${w + 1}">${MONTH_SHORT[Number(d.slice(5, 7)) - 1]}</span>`).join('')}</div>
+      <div class="heat" role="img" aria-label="${esc(`Calendário de leitura: ${cells.filter(([, v]) => v > 0).length} dias com leitura nos últimos 12 meses`)}">${cells.map(([d, v]) => `<i class="l${level(v)}${d === today ? ' today' : ''}" data-tip="${esc(`${longDate(d)}: ${v ? M.fmt(v) : 'nada'}`)}"></i>`).join('')}</div>
+    </div></div>
+    <div class="heat-legend faint small" aria-hidden="true">menos <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> mais</div>`;
+}
+
+function forecastLine(b, log, today) {
+  const f = forecast(b, log, today);
+  const u = (v) => (isAudio(b) ? fmtMin(v) : `${fmtNum(Math.max(1, v))} pág.`);
+  let text;
+  if (f.perDay) {
+    text = `<b>${u(f.perDay)} por dia</b>${f.days != null ? (f.days ? ` · termina em ~${plural(f.days, 'dia', 'dias')} (${shortDate(f.date)})` : '') : ' · informe o total para prever o fim'}`;
+  } else text = f.last ? `sem avanço desde ${shortDate(f.last)}` : 'ainda sem registros deste livro';
+  return `<p class="forecast small muted">${text}</p>`;
+}
+
+function doneList(rows, everDone) {
+  if (!rows.length) {
+    return `<div class="card empty-card"><p class="muted small">${everDone
+      ? `Nenhum livro concluído neste período. <button class="link-btn" data-action="rhythm-range" data-value="tudo">Ver todos (${everDone})</button>`
+      : 'Quando você terminar um livro, ele aparece aqui com quanto tempo levou.'}</p></div>`;
+  }
+  return `<div class="card done-list">${rows.map((r) => {
+    const b = r.book;
+    const pace = r.days && r.size ? (isAudio(b) ? `${fmtMin(r.size / r.days)} por dia` : `${fmtNum(Math.max(1, r.size / r.days))} pág. por dia`) : '';
+    return `<button class="done-row" data-action="open-book" data-id="${b.id}">
+      ${coverHTML(b, { size: 'xs', badges: false })}
+      <span class="done-title"><b>${esc(b.title)}</b><span class="faint small">${esc(b.author || '')}${r.nth > 1 ? ` · ${r.nth}ª leitura` : ''}</span></span>
+      <span class="done-days">${r.days ? `<b>${plural(r.days, 'dia', 'dias')}</b><span class="faint small">${pace}</span>` : '<span class="faint small">sem data de início</span>'}</span>
+      <span class="done-when small muted">${r.finishedAt ? esc(shortDate(r.finishedAt)) : ''}${r.rating ? `<span class="stars-mini" aria-label="${r.rating} estrelas">${'★'.repeat(r.rating)}</span>` : ''}</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+
+function logList(log) {
+  const sorted = log.map((e, i) => [e, i]).sort(([a, i], [b, j]) => b.date.localeCompare(a.date) || j - i).slice(0, 120).map(([e]) => e);
+  const groups = [];
+  for (const e of sorted) {
+    if (groups.at(-1)?.[0] !== e.date) groups.push([e.date, []]);
+    groups.at(-1)[1].push(e);
+  }
+  const amount = (e) => [e.amount ? (e.unit === 'min' ? `${fmtMin(e.amount)} ouvidos` : `+${fmtNum(e.amount)} pág.`) : '', e.minutes ? `${fmtMin(e.minutes)} lendo` : ''].filter(Boolean).join(' · ');
+  return `<details class="card log-list" ${state.logOpen ? 'open' : ''}>
+    <summary><span>Registros</span><span class="faint small">${plural(log.length, 'registro', 'registros')} · apagar um registro não muda o progresso do livro</span></summary>
+    ${groups.map(([d, es]) => `<div class="log-day"><div class="log-date">${esc(dayLabel(d))}</div>${es.map((e) => `<div class="log-row">
+      <span class="log-book">${esc(byId(e.book)?.title || '')}</span><span class="log-amt">${amount(e)}</span>
+      <button class="icon-btn" data-action="log-remove" data-id="${e.id}" title="Apagar este registro" aria-label="Apagar este registro">${icon('x')}</button></div>`).join('')}</div>`).join('')}
+  </details>`;
+}
+document.addEventListener('toggle', (e) => { if (e.target.classList?.contains('log-list')) state.logOpen = e.target.open; }, true);
+// Girar o celular ou estreitar a janela: o calendário volta a mostrar as semanas mais recentes.
+addEventListener('resize', () => { const h = $('.heat-scroll'); if (h && h.scrollLeft === 0) h.scrollLeft = h.scrollWidth; });
+
+// Dica flutuante dos gráficos: mouse, dedo (toque) e foco do teclado.
+const tipEl = $('#tip');
+function showTip(el) {
+  tipEl.textContent = el.dataset.tip;
+  tipEl.classList.add('show');
+  const r = el.getBoundingClientRect();
+  const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+  const x = clamp(r.left + r.width / 2 - w / 2, 8, innerWidth - w - 8);
+  const y = r.top - h - 8 < 8 ? r.bottom + 8 : r.top - h - 8;
+  tipEl.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+}
+const hideTip = () => tipEl.classList.remove('show');
+document.addEventListener('pointerover', (e) => { const el = e.target.closest?.('[data-tip]'); if (el) showTip(el); else hideTip(); });
+document.addEventListener('focusin', (e) => { const el = e.target.closest?.('[data-tip]'); if (el) showTip(el); else hideTip(); });
+document.addEventListener('scroll', hideTip, true);
+
+// ============================================================ cronômetro e sessões
+const timerElapsed = () => { const t = state.library.timer; return t ? Math.max(0, Date.now() - Date.parse(t.start)) : 0; };
+function clockText(ms) {
+  const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return `${h ? `${h}:${String(m).padStart(2, '0')}` : m}:${String(r).padStart(2, '0')}`;
+}
+function renderTimerBar() {
+  const bar = $('#timer-bar');
+  const t = state.library.timer;
+  const b = t && byId(t.book);
+  document.body.classList.toggle('has-timer', !!b);
+  if (!b) { bar.hidden = true; bar.innerHTML = ''; return; }
+  bar.hidden = false;
+  bar.innerHTML = `<span class="pulse" aria-hidden="true"></span>
+    <button class="timer-book" data-action="open-book" data-id="${b.id}" title="${esc(b.title)}">${esc(b.title)}</button>
+    <span class="timer-clock">${clockText(timerElapsed())}</span>
+    <button class="btn sm primary" data-action="timer-stop" data-id="${b.id}">Parar</button>
+    <button class="icon-btn" data-action="timer-cancel" title="Descartar a sessão" aria-label="Descartar a sessão">${icon('x')}</button>`;
+}
+setInterval(() => {
+  const el = $('#timer-bar .timer-clock');
+  if (el && state.library.timer) el.textContent = clockText(timerElapsed());
+}, 1000);
+
+function startTimer(id) {
+  const b = byId(id);
+  const t = state.library.timer;
+  if (!b) return;
+  if (t && byId(t.book)) {
+    if (t.book !== id) toast(`Já há uma sessão em andamento: “${byId(t.book).title}”. Pare essa antes.`, 'err');
+    return;
+  }
+  trackProgress(b); // o que foi marcado antes não entra na sessão
+  if (b.status === 'quero_ler' || b.status === 'pausado') setStatus(b, 'lendo');
+  state.library.timer = { book: id, start: new Date().toISOString() };
+  persist();
+  renderAll();
+  toast(`Cronometrando “${b.title}”. Boa leitura!`);
+}
+
+function openSession({ id, minutes = '', date = '', fromTimer = false } = {}) {
+  const today = localDay();
+  const all = books();
+  const active = all.filter((x) => x.status === 'lendo' || x.status === 'pausado' || x.id === id);
+  const queued = all.filter((x) => !active.includes(x) && x.status === 'quero_ler');
+  const b = byId(id) || active[0] || queued[0];
+  if (!b) { toast('Nenhum livro em leitura para registrar.', 'err'); return; }
+  const cur = Number(b.progress?.current) || 0;
+  const total = Number(b.progress?.total) || 0;
+  const pos = fromTimer && isAudio(b) && minutes ? Math.min(total || Infinity, cur + Number(minutes)) : cur;
+  const opt = (x) => `<option value="${x.id}" ${x.id === b.id ? 'selected' : ''}>${esc(x.title)}</option>`;
+  showModal(`<div class="modal-head"><div><h2>${fromTimer ? 'Fim da sessão' : 'Registrar sessão'}</h2>
+      <p class="muted small">${fromTimer ? `Você leu por ${fmtMin(minutes)}. Até onde chegou?` : 'Anote uma leitura: até onde chegou e, se souber, quanto tempo levou.'}</p></div>
+      <button class="icon-btn" data-action="close-modal" aria-label="Fechar">${icon('x')}</button></div>
+    <form id="session" class="modal-body" data-timer="${fromTimer ? 1 : 0}">
+      <label><span class="field-label">Livro</span><select class="select wide" name="book" ${fromTimer ? 'disabled' : ''}>${active.map(opt).join('')}${queued.length ? `<optgroup label="Quero ler">${queued.map(opt).join('')}</optgroup>` : ''}</select></label>
+      <div class="grid-2">
+        <label><span class="field-label">${isAudio(b) ? 'Parei em (minutos)' : 'Parei na página'}</span><input class="input" type="number" name="pos" min="0" ${total ? `max="${total}"` : ''} value="${pos}" inputmode="numeric"></label>
+        <label><span class="field-label">Tempo lendo (min)</span><input class="input" type="number" name="minutes" min="0" max="1440" value="${esc(minutes)}" placeholder="opcional" inputmode="numeric"></label>
+      </div>
+      <p class="faint small" style="margin-top:-6px">Antes: ${isAudio(b) ? fmtAmount(b, cur) : `página ${cur}`}${total ? ` de ${fmtAmount(b, total)}` : ''}.</p>
+      <label><span class="field-label">Dia</span><input class="input" type="date" name="date" value="${esc(isDay(date) ? date : today)}" max="${today}"></label>
+      <div class="modal-foot" style="padding:0">
+        <button type="button" class="btn ghost" data-action="close-modal">${fromTimer ? 'Continuar lendo' : 'Cancelar'}</button>
+        <button class="btn primary" type="submit">${icon('check')}Salvar</button>
+      </div>
+    </form>`, 'session');
+  setTimeout(() => { const i = $('#session [name="pos"]'); i?.focus(); i?.select(); }, 60);
+}
+
+function saveSession(f) {
+  const el = f.elements;
+  const b = byId(el.book.value);
+  if (!b) return;
+  const today = localDay();
+  const date = isDay(el.date.value) && el.date.value <= today ? el.date.value : today;
+  const minutes = clamp(Math.round(Number(el.minutes.value) || 0), 0, 1440);
+  const total = Number(b.progress?.total) || 0;
+  trackProgress(b); // o que estava pendente fica fora desta sessão
+  const cur = Number(b.progress.current) || 0;
+  const pos = el.pos.value === '' ? cur : clamp(Math.round(Number(el.pos.value) || 0), 0, total || 1e6);
+  const delta = pos - cur;
+  if (!delta && !minutes) { toast('Informe até onde leu ou quanto tempo leu.', 'err'); return; }
+  let log = logOf();
+  if (delta < 0) log = applyDelta(log, { book: b.id, delta, date, unit: unitOf(b), id: uid() });
+  if (delta > 0 || minutes) log = [...log, { id: uid(), book: b.id, date, amount: Math.max(0, delta), unit: unitOf(b), ...(minutes ? { minutes } : {}) }];
+  state.library.log = log;
+  const patch = { progress: { ...b.progress, current: pos, mark: pos } };
+  if (pos > 0 && b.status === 'quero_ler') { patch.status = 'lendo'; patch.startedAt = b.startedAt || date; }
+  updateBook(b.id, patch);
+  if (f.dataset.timer === '1') state.library.timer = null;
+  persist();
+  closeModal();
+  const what = [delta > 0 ? (isAudio(b) ? `${fmtMin(delta)} ouvidos` : plural(delta, 'página', 'páginas')) : '', minutes ? `em ${fmtMin(minutes)}` : ''].filter(Boolean).join(' ');
+  if (total && pos >= total && byId(b.id).status !== 'lido') { setStatus(byId(b.id), 'lido'); toast(`“${b.title}” concluído. 🎉`); }
+  else toast(what ? `Sessão registrada: ${what}.` : 'Sessão registrada.');
+  renderAll();
+}
+
 // ============================================================ tema & rotas
 function applyTheme() {
   const t = store.get('theme');
@@ -2039,7 +2430,7 @@ function toggleTheme() {
 }
 function route() {
   const v = location.hash.replace('#', '');
-  state.view = ['estante', 'plano', 'descobrir'].includes(v) ? v : 'estante';
+  state.view = ['estante', 'plano', 'descobrir', 'ritmo'].includes(v) ? v : 'estante';
   renderView();
   window.scrollTo({ top: 0 });
 }
