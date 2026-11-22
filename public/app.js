@@ -1622,7 +1622,7 @@ function openSettings(typed = null) {
         <label><span class="field-label">Modelo Anthropic</span><input class="input" name="anthropicModel" value="${esc(s.anthropicModel || '')}"></label>
         <label><span class="field-label">OpenAI API key</span><input class="input" type="password" name="openaiKey" autocomplete="off" placeholder="${esc(s.openaiKeyHint || 'sk-…')}"></label>
         <label><span class="field-label">Modelo OpenAI</span><input class="input" name="openaiModel" value="${esc(s.openaiModel || '')}"></label>
-        <label><span class="field-label">Modelo para CLIs (opcional)</span><input class="input" name="cliModel" value="${esc(s.cliModel || '')}" placeholder="ex.: sonnet, opus, gpt-5…"></label>
+        <label><span class="field-label">Modelo para CLIs (opcional)</span><input class="input" name="cliModel" value="${esc(s.cliModel || '')}" placeholder="ex.: sonnet, opus, gpt-5…"><span class="faint small" style="display:block;margin-top:4px">Vazio: o Claude Code usa o Modelo Anthropic acima; Codex e Cursor usam o padrão deles.</span></label>
         <p class="faint small">As chaves ficam só neste computador, em <code>data/settings.json</code>. Deixe o campo vazio para manter a chave atual.</p>
         ${s.anthropicKeyHint || s.openaiKeyHint ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${s.anthropicKeyHint && s.anthropicKeyHint !== 'variável de ambiente' ? '<label class="small"><input type="checkbox" name="clearAnthropicKey"> remover chave Anthropic</label>' : ''}${s.openaiKeyHint && s.openaiKeyHint !== 'variável de ambiente' ? '<label class="small"><input type="checkbox" name="clearOpenaiKey"> remover chave OpenAI</label>' : ''}</div>` : ''}
       </div>
