@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   localDay, addDays, daysBetween, applyDelta, byDay, streak, rangeOf, series, totals,
-  pagesPerHour, finishedReadings, forecast, bookTime,
+  pagesPerHour, finishedReadings, forecast, bookTime, readingSpeed, minutesPerPage, estimateBook, DIFF_FACTOR,
 } from '../public/stats.js';
 
 let n = 0;
@@ -113,4 +113,47 @@ test('tempo de leitura por livro: só sessões com tempo, ritmo com páginas', (
   assert.equal(t.pagesPerHour, 40); // 20 pág. em 30 min
   assert.equal(bookTime(log, 'c').pagesPerHour, null);
   assert.equal(bookTime([{ id: 'x', book: 'c', date: '2026-11-01', amount: 5, unit: 'pag', minutes: 5 }], 'c').pagesPerHour, null); // menos de 10 min
+});
+
+test('minutos por página: padrão por dificuldade com poucos dados, medido com vários níveis', () => {
+  const books = [
+    { id: 'f', ai: { difficulty: 2 }, progress: { current: 0, total: 200 } },
+    { id: 'm', ai: { difficulty: 3 }, progress: { current: 50, total: 250 } },
+    { id: 'd', ai: { difficulty: 5 }, progress: { current: 0, total: 300 } },
+    { id: 'x', progress: { current: 0, total: 100 } }, // sem classificação: conta como 3
+    { id: 'a', format: 'audiobook', ai: { difficulty: 3 }, progress: { current: 0, total: 600 } },
+  ];
+  assert.equal(readingSpeed([], books).ready, false);
+  assert.equal(readingSpeed([{ book: 'm', unit: 'pag', amount: 5, minutes: 10 }], books).ready, false); // pouco tempo
+
+  // Só dificuldade 3, 2 min/pág.: os outros níveis seguem o fator padrão.
+  const one = readingSpeed([{ book: 'm', unit: 'pag', amount: 60, minutes: 120 }], books);
+  assert.ok(one.ready && !one.fitted);
+  assert.equal(one.factor, DIFF_FACTOR);
+  assert.ok(Math.abs(one.base - 2) < 1e-9);
+  assert.ok(Math.abs(one.levels[5].est - 2 * DIFF_FACTOR ** 2) < 1e-9);
+  assert.ok(Math.abs(one.levels[2].est - 2 / DIFF_FACTOR) < 1e-9);
+  // O livro medido usa o próprio ritmo (puxado pelo nível); o que falta: 200 pág.
+  const e = estimateBook(one, books[1]);
+  assert.equal(e.pages, 200);
+  assert.ok(e.own && Math.abs(e.minutes - 400) < 1e-6);
+  assert.equal(estimateBook(one, books[3]).minutes, 100 * one.levels[3].est); // sem dificuldade -> 3
+  assert.equal(estimateBook(one, books[4]), null); // audiobook
+  assert.equal(estimateBook(one, books[2], { whole: true }).pages, 300);
+
+  // Níveis 2 e 5 medidos: o fator vem dos dados (1 -> 2 min/pág. em 3 níveis ≈ 1,26 por nível).
+  const two = readingSpeed([
+    { book: 'f', unit: 'pag', amount: 100, minutes: 100 },
+    { book: 'd', unit: 'pag', amount: 100, minutes: 200 },
+  ], books);
+  assert.ok(two.fitted);
+  assert.ok(Math.abs(two.factor - 2 ** (1 / 3)) < 1e-9);
+  assert.ok(two.levels[5].est > two.levels[3].est && two.levels[3].est > two.levels[2].est);
+  // Dados que dizem "mais difícil é mais rápido" não invertem a ordem: fator mínimo 1.
+  const odd = readingSpeed([
+    { book: 'f', unit: 'pag', amount: 100, minutes: 200 },
+    { book: 'd', unit: 'pag', amount: 100, minutes: 100 },
+  ], books);
+  assert.equal(odd.factor, 1);
+  assert.ok(minutesPerPage(odd, books[2]) > 0);
 });

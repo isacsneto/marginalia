@@ -1,7 +1,7 @@
 // Marginália: interface em JS puro, sem build. Estado único + render por string.
 import {
   localDay, addDays, daysBetween, isDay, applyDelta, byDay, streak, RANGES, rangeOf, series, totals,
-  pagesPerHour, finishedReadings, forecast, bookTime,
+  pagesPerHour, finishedReadings, forecast, bookTime, readingSpeed, estimateBook, DIFF_FACTOR,
 } from './stats.js';
 
 // ============================================================ utilidades
@@ -134,10 +134,37 @@ function hueFor(b) {
 }
 function remainingHours(b) {
   if (isDone(b) || b.status === 'abandonado' || b.ownership === 'vendido') return 0;
-  const h = Number(b.ai?.hours) || 0;
-  if (b.status === 'lido') return h; // marcado para reler
-  return h * (1 - pct(b) / 100);
+  return (timeLeft(b)?.minutes || 0) / 60;
 }
+
+// Velocidade de leitura (min/pág. por dificuldade) aprendida das sessões cronometradas.
+let speedMemo = { key: '', v: null };
+function speedNow() {
+  const log = logOf();
+  const list = books();
+  const last = log.at(-1);
+  const key = `${log.length}:${last?.id}:${last?.amount}:${last?.minutes}:${list.length}:${list.map((b) => b.ai?.difficulty || 0).join('')}`;
+  if (speedMemo.key !== key) speedMemo = { key, v: readingSpeed(log, list) };
+  return speedMemo.v;
+}
+
+// Quanto falta para ler um livro (o livro inteiro se é releitura):
+// audiobook pela duração; em páginas, pelo seu ritmo; sem sessões, pela estimativa da IA.
+function timeLeft(b) {
+  const whole = b.status === 'lido';
+  if (isAudio(b)) {
+    const total = Number(b.progress?.total) || 0;
+    if (total) return { minutes: whole ? total : Math.max(0, total - (Number(b.progress?.current) || 0)), how: 'audio' };
+  } else {
+    const e = estimateBook(speedNow(), b, { whole });
+    if (e) return { ...e, how: 'ritmo' };
+  }
+  const h = Number(b.ai?.hours) || 0;
+  return h ? { minutes: h * 60 * (whole ? 1 : 1 - pct(b) / 100), how: 'ia' } : null;
+}
+const perDayMin = () => Number(state.settings.minutesPerDay) || 45;
+const daysAt = (min) => Math.max(1, Math.ceil(min / perDayMin()));
+const fmtMpp = (n) => `${n.toFixed(n < 10 ? 1 : 0).replace('.', ',')} min/pág.`;
 
 // ============================================================ estado
 const state = {
@@ -498,7 +525,7 @@ function updateWeeks(plan) {
   const perDay = Number(state.settings.minutesPerDay) || 45;
   for (const ph of plan.phases) {
     if (['parallel', 'outside'].includes(ph.kind)) continue;
-    const h = ph.books.reduce((n, x) => n + (x.id && !isDone(byId(x.id)) ? Number(byId(x.id)?.ai?.hours) || 0 : 0), 0);
+    const h = ph.books.reduce((n, x) => n + (x.id && byId(x.id) ? remainingHours(byId(x.id)) : 0), 0);
     ph.weeks = h ? Math.max(1, Math.round((h * 60) / perDay / 7)) : null;
   }
 }
@@ -895,7 +922,7 @@ function viewShelf() {
       <div class="card stat"><div class="label">Lendo agora</div><div class="value">${reading.length}</div>
         <div class="sub">${reading.length ? esc(reading.map((b) => b.title).slice(0, 2).join(' · ')) : 'escolha um livro para começar'}</div></div>
       <div class="card stat"><div class="label">Tempo restante</div><div class="value">${hours ? `${Math.round(hours)}h` : '—'}</div>
-        <div class="sub">${hours ? `≈ ${plural(weeks, 'semana', 'semanas')} a ${perDay} min/dia` : 'classifique para estimar'}</div></div>
+        <div class="sub">${hours ? `≈ ${plural(weeks, 'semana', 'semanas')} a ${perDay} min/dia${speedNow().ready ? ' · no seu ritmo' : ''}` : 'classifique para estimar'}</div></div>
     </div>
 
     ${pending.length ? `<div class="banner">${icon('sparkles')}<div class="txt">${cp
@@ -1025,12 +1052,15 @@ function viewPlan() {
     if (allDone) cls = 'done';
     else if (currentIdx < 0) { cls = 'current'; currentIdx = i; }
     const read = ph.books.filter(done).length;
+    // Semanas recalculadas com o tempo que falta de cada livro (no seu ritmo, quando já há sessões).
+    const leftH = ph.books.reduce((n, x) => n + (x.id && byId(x.id) ? remainingHours(byId(x.id)) : 0), 0);
+    const weeks = ['parallel', 'outside'].includes(ph.kind) ? ph.weeks : leftH ? Math.max(1, Math.round((leftH * 60) / perDayMin() / 7)) : allDone ? null : ph.weeks;
     return `<div class="phase ${cls}">
       <div class="num">${allDone ? icon('check').replace('<svg', '<svg style="width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.5"') : i + 1}</div>
       <div class="card" data-phase-idx="${plan.phases.indexOf(ph)}">
         <div class="phase-head">
           <div><h3>${esc(ph.name)}</h3>${ph.goal ? `<p class="goal">${esc(ph.goal)}</p>` : ''}${siteLinks(ph)}</div>
-          <div class="tags">${ph.weeks ? `<span class="tag">${icon('clock').replace('<svg', '<svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"')}~${plural(ph.weeks, 'semana', 'semanas')}</span>` : ''}<span class="tag ${allDone ? 'ok' : ''}" title="${hide ? 'lidos / seus livros nesta etapa' : 'lidos / livros da etapa'}">${read}/${visible(ph).length}</span></div>
+          <div class="tags">${weeks ? `<span class="tag">${icon('clock').replace('<svg', '<svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"')}~${plural(weeks, 'semana', 'semanas')}</span>` : ''}<span class="tag ${allDone ? 'ok' : ''}" title="${hide ? 'lidos / seus livros nesta etapa' : 'lidos / livros da etapa'}">${read}/${visible(ph).length}</span></div>
         </div>
         ${rows(ph, currentIdx < 0 || i <= currentIdx + 1)}
       </div>
@@ -1243,7 +1273,11 @@ function drawerOverview(b) {
       <div class="kv">
         <div><div class="k">Natureza</div><div class="v">${esc(ai.nature || '—')}</div></div>
         <div><div class="k">Dificuldade</div><div class="v"><span class="dots">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= ai.difficulty ? 'on' : ''}"></i>`).join('')}</span></div></div>
-        <div><div class="k">Tempo</div><div class="v">${ai.hours ? `~${ai.hours}h` : '—'}${ai.pages ? ` · ${ai.pages}p` : ''}</div></div>
+        <div><div class="k">Tempo</div><div class="v">${(() => {
+          const e = estimateBook(speedNow(), b, { whole: true });
+          return e ? `<span title="No seu ritmo: ${esc(fmtMpp(e.mpp))}${ai.hours ? `; a IA estimou ~${ai.hours}h` : ''}">~${fmtMin(e.minutes)} <span class="faint small">para você</span></span>`
+            : `${ai.hours ? `~${ai.hours}h` : '—'}${ai.pages ? ` · ${ai.pages}p` : ''}`;
+        })()}</div></div>
       </div>
       ${ai.themes?.length ? `<div class="tags">${ai.themes.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
       ${ai.prerequisites?.length ? `<p class="small"><b>Ajuda ler antes:</b> ${esc(ai.prerequisites.join('; '))}</p>` : ''}
@@ -1316,13 +1350,14 @@ function drawerOwnership(b) {
 function timeBlock(b) {
   const t = bookTime(logOf(), b.id);
   const reading = b.status !== 'lido' && b.status !== 'abandonado';
+  const est = reading ? estimateBook(speedNow(), b) : null;
+  const estLine = est && est.pages ? `<p class="small est-line">${icon('clock')}<span>No seu ritmo, ${b.status === 'quero_ler' && !(Number(b.progress?.current) > 0) ? 'este livro leva' : 'faltam'} <b>~${fmtMin(est.minutes)}</b> de leitura, cerca de ${plural(daysAt(est.minutes), 'dia', 'dias')} a ${perDayMin()} min/dia <span class="faint">(${esc(fmtMpp(est.mpp))}${est.own ? ', medido neste livro' : est.difficulty ? `, dificuldade ${est.difficulty}` : ''})</span>.</span></p>` : '';
   if (!t.sessions.length) {
-    return reading ? `<div class="time-block empty"><span class="field-label">Tempo de leitura</span>
-      <p class="faint small">Use <b>Cronometrar</b> ao começar a ler e <b>Parar</b> ao terminar: o app anota quantas páginas você leu e em quanto tempo.</p></div>` : '';
+    return reading ? `<div class="time-block empty"><span class="field-label">Tempo de leitura</span>${estLine}
+      <p class="faint small">Use <b>Cronometrar</b> ao começar a ler e <b>Parar</b> ao terminar: o app anota quantas páginas você leu e em quanto tempo${est ? ' e afina a estimativa' : ''}.</p></div>` : '';
   }
   const audio = isAudio(b);
-  const left = Math.max(0, (Number(b.progress?.total) || 0) - (Number(b.progress?.current) || 0));
-  const eta = reading && !audio && left && t.pagesPerHour ? (left / t.pagesPerHour) * 60 : null;
+  const eta = est?.pages ? est.minutes : null;
   const row = (e) => {
     const amount = e.amount > 0 ? (audio ? `${fmtMin(e.amount)} ouvidos` : `${fmtNum(e.amount)} pág.`) : '';
     const pace = !audio && e.amount > 0 ? `${fmtNum(e.amount / (e.minutes / 60))} pág./h` : '';
@@ -1334,6 +1369,7 @@ function timeBlock(b) {
       ${audio ? '' : `<div><div class="k">Páginas cronometradas</div><div class="v">${fmtNum(t.pages)}</div><div class="faint small">${t.pages ? 'nas sessões com tempo' : 'anote até onde chegou'}</div></div>
       <div><div class="k">Seu ritmo</div><div class="v">${t.pagesPerHour ? `${fmtNum(t.pagesPerHour)}<span class="faint small"> pág./h</span>` : '—'}</div><div class="faint small">${eta ? `faltam ~${fmtMin(eta)} de leitura` : t.pagesPerHour ? 'neste livro' : 'precisa de 10 min ou mais'}</div></div>`}
     </div>
+    ${estLine}
     <ul class="time-list">${t.sessions.slice(0, 5).map(row).join('')}</ul>
     ${t.sessions.length > 5 ? `<a class="faint small" href="#ritmo" data-action="close-overlays">Ver todas as sessões no Ritmo</a>` : ''}
   </div>`;
@@ -2317,9 +2353,13 @@ function unreadSection(list) {
   const q = state.webQueue;
   const missing = list.filter((b) => !b.web);
   const found = list.filter((b) => b.web?.rating);
-  const sort = state.ratings.unreadSort === 'titulo' ? 'titulo' : 'web';
+  const sorts = [['web', 'Nota na internet'], ['rapidos', 'Mais rápidos'], ['titulo', 'Título']];
+  const sort = sorts.some(([k]) => k === state.ratings.unreadSort) ? state.ratings.unreadSort : 'web';
   const coll = (a, b) => a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' });
-  const sorted = [...list].sort(sort === 'titulo' ? coll : (a, b) => (b.web?.rating || 0) - (a.web?.rating || 0) || coll(a, b));
+  const left = (b) => timeLeft(b)?.minutes ?? Infinity;
+  const sorted = [...list].sort(sort === 'titulo' ? coll
+    : sort === 'rapidos' ? (a, b) => left(a) - left(b) || coll(a, b)
+      : (a, b) => (b.web?.rating || 0) - (a.web?.rating || 0) || coll(a, b));
   const avg = found.length ? found.reduce((s, b) => s + b.web.rating, 0) / found.length : 0;
   const bar = q
     ? `<div class="web-bar card"><span class="spinner"></span><div class="txt"><b>Buscando notas na internet… ${q.done}/${q.total}</b><span class="faint small">A IA pesquisa alguns livros por vez; cada lote leva cerca de 1 minuto.</span></div>
@@ -2329,7 +2369,7 @@ function unreadSection(list) {
       ${missing.length ? `<button class="btn sm primary" data-action="web-ratings">${icon('sparkles')}Buscar com IA</button>` : ''}</div>`;
   return `${bar}
     <div class="section-title ratings-head"><h2>Não lidos</h2>
-      <div class="segmented" role="tablist" aria-label="Ordenar por">${[['web', 'Nota na internet'], ['titulo', 'Título']].map(([k, v]) => `<button role="tab" class="${sort === k ? 'active' : ''}" aria-selected="${sort === k}" data-action="ratings-unread-sort" data-value="${k}">${v}</button>`).join('')}</div></div>
+      <div class="segmented" role="tablist" aria-label="Ordenar por">${sorts.map(([k, v]) => `<button role="tab" class="${sort === k ? 'active' : ''}" aria-selected="${sort === k}" data-action="ratings-unread-sort" data-value="${k}">${v}</button>`).join('')}</div></div>
     <div class="card rated-list">${sorted.map(unreadRow).join('')}</div>`;
 }
 
@@ -2338,6 +2378,8 @@ function unreadRow(b) {
   const busy = state.webQueue?.ids?.has(b.id);
   const status = b.status !== 'quero_ler' ? STATUS[b.status].toLowerCase() : '';
   const source = w?.rating ? [w.count ? `${fmtCount(w.count)} avaliações` : '', w.source].filter(Boolean).join(' no ') : '';
+  const tl = timeLeft(b);
+  const time = tl?.minutes ? `~${fmtMin(tl.minutes)}${tl.how === 'ritmo' ? ' no seu ritmo' : tl.how === 'ia' ? ' (estimativa da IA)' : ' de áudio'}` : '';
   const right = busy ? '<span class="spinner" title="Buscando"></span>'
     : w?.rating ? `<div class="web-score"><b>${fmtRating(w.rating)}</b><span class="s-on">★</span></div>`
       : w ? `<button class="link-btn small" data-action="web-ratings" data-id="${b.id}" title="Buscar de novo">não encontrada</button>`
@@ -2346,7 +2388,7 @@ function unreadRow(b) {
     <button class="rated-open" data-action="open-book" data-id="${b.id}">
       ${coverHTML(b, { size: 'xs', badges: false })}
       <span class="done-title"><b>${esc(b.title)}</b><span class="faint small">${esc(b.author || '')}</span>
-        ${status || source ? `<span class="faint small">${esc([status, source].filter(Boolean).join(' · '))}</span>` : ''}</span>
+        ${status || source || time ? `<span class="faint small">${esc([status, time, source].filter(Boolean).join(' · '))}</span>` : ''}</span>
     </button>
     <div class="unread-side">
       ${w?.rating && w.url ? `<a class="web-link" href="${esc(w.url)}" target="_blank" rel="noopener noreferrer" title="Ver em ${esc(w.source || 'site')}">${right}</a>` : right}
@@ -2487,6 +2529,8 @@ function viewRhythm() {
       ${heatmap(days, metric, M, today)}
     </div>
 
+    ${speedCard()}
+
     ${reading.length ? `<div class="section-title"><h2>Lendo agora</h2><span class="faint small">ritmo das últimas 2 semanas</span></div>
       <div class="now-row">${reading.map((b) => nowCard(b, forecastLine(b, log, today))).join('')}</div>` : ''}
 
@@ -2542,6 +2586,38 @@ function heatmap(days, metric, M, today) {
     <div class="heat-legend faint small" aria-hidden="true">menos <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> mais</div>`;
 }
 
+// Minutos por página por dificuldade: medido nas sessões cronometradas, o resto estimado.
+function speedCard() {
+  const sp = speedNow();
+  if (!sp.ready) {
+    return `<div class="card chart-card"><div class="chart-head"><h2>Minutos por página</h2></div>
+      <p class="muted small" style="margin:8px 0 0">Cronometre algumas sessões (pelo menos 20 minutos ao todo) e o app aprende quanto tempo você leva por página. Com isso ele estima, pela dificuldade de cada livro, quanto tempo você levaria para ler os outros.${sp.minutes ? ` Até agora: ${fmtMin(sp.minutes)} cronometrados.` : ''}</p></div>`;
+  }
+  const max = Math.max(...Object.values(sp.levels).map((l) => l.est));
+  const pctUp = Math.round((sp.factor - 1) * 100);
+  const queue = books().filter((b) => b.status === 'quero_ler' && b.ownership !== 'vendido' && !isAudio(b))
+    .map((b) => ({ b, e: estimateBook(sp, b, { whole: true }) })).filter((x) => x.e);
+  const short = queue.sort((x, y) => x.e.minutes - y.e.minutes).slice(0, 3);
+  return `<div class="card chart-card speed-card">
+    <div class="chart-head"><h2>Minutos por página</h2><span class="faint small">${fmtNum(sp.pages)} pág. em ${fmtMin(sp.minutes)} cronometrados</span></div>
+    <p class="small" style="margin:6px 0 0">Em média você lê <b>${esc(fmtMpp(sp.average))}</b> (${fmtNum(60 / sp.average)} pág. por hora). ${sp.fitted
+      ? `Pelas suas sessões, cada nível de dificuldade a mais custa <b>${pctUp ? `~${pctUp}%` : 'quase nada'}</b> de tempo por página.`
+      : `Enquanto você não cronometrar livros de dificuldades diferentes, o app supõe ~${Math.round((DIFF_FACTOR - 1) * 100)}% a mais de tempo por página a cada nível.`}</p>
+    <div class="speed-rows">${[1, 2, 3, 4, 5].map((d) => {
+      const l = sp.levels[d];
+      return `<div class="speed-row" data-tip="Dificuldade ${d}: ${esc(fmtMpp(l.est))}${l.pages ? ` · medido em ${fmtNum(l.pages)} pág.` : ' · estimado'}">
+        <span class="speed-label"><span class="dots">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= d ? 'on' : ''}"></i>`).join('')}</span></span>
+        <span class="dist-track"><span class="dist-bar speed-bar ${l.pages ? '' : 'est'}" style="width:${(l.est / max) * 100}%"></span></span>
+        <span class="speed-val">${esc(fmtMpp(l.est))}</span>
+        <span class="speed-src faint small">${l.pages ? `medido · ${fmtNum(l.pages)} pág.` : 'estimado'}</span>
+      </div>`;
+    }).join('')}</div>
+    <p class="faint small" style="margin:10px 0 0">Barras cheias: medido nas suas sessões (misturado ao modelo quando há poucas páginas). Listradas: estimado. Livros sem classificação contam como dificuldade 3.</p>
+    ${short.length ? `<div class="speed-quick"><span class="field-label" style="margin:0">Mais rápidos da sua fila</span>
+      ${short.map(({ b, e }) => `<button class="link-row" data-action="open-book" data-id="${b.id}"><span>${esc(b.title)}</span><span class="faint small">~${fmtMin(e.minutes)} · ${plural(daysAt(e.minutes), 'dia', 'dias')}</span></button>`).join('')}</div>` : ''}
+  </div>`;
+}
+
 function forecastLine(b, log, today) {
   const f = forecast(b, log, today);
   const u = (v) => (isAudio(b) ? fmtMin(v) : `${fmtNum(Math.max(1, v))} pág.`);
@@ -2549,6 +2625,8 @@ function forecastLine(b, log, today) {
   if (f.perDay) {
     text = `<b>${u(f.perDay)} por dia</b>${f.days != null ? (f.days ? ` · termina em ~${plural(f.days, 'dia', 'dias')} (${shortDate(f.date)})` : '') : ' · informe o total para prever o fim'}`;
   } else text = f.last ? `sem avanço desde ${shortDate(f.last)}` : 'ainda sem registros deste livro';
+  const e = estimateBook(speedNow(), b);
+  if (e?.pages) text += ` · faltam ~${fmtMin(e.minutes)} de leitura`;
   return `<p class="forecast small muted">${text}</p>`;
 }
 

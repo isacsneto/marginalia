@@ -171,3 +171,77 @@ export function forecast(book, log, today, window = 14) {
   const days = Math.ceil(left / perDay);
   return { perDay, left, days, date: addDays(today, days), last: last || null };
 }
+
+// ---------------------------------------------------------------- velocidade de leitura
+// Minutos por página a partir das sessões cronometradas, ajustados pela dificuldade (1 a 5)
+// que a IA deu a cada livro. Com poucos dados, vale o padrão: cada nível a mais de dificuldade
+// pede ~20% mais tempo por página. Com sessões em níveis diferentes, o fator é medido.
+export const DIFF_FACTOR = 1.2;
+const LEVEL_PRIOR = 40; // páginas "imaginárias" do modelo misturadas ao que foi medido num nível
+const BOOK_PRIOR = 20; // idem, para o ritmo medido no próprio livro
+const diffOf = (b) => {
+  const d = Math.round(Number(b?.ai?.difficulty));
+  return d >= 1 && d <= 5 ? d : null;
+};
+
+export function readingSpeed(log, books) {
+  const byId = new Map(books.map((b) => [b.id, b]));
+  const levels = Object.fromEntries([1, 2, 3, 4, 5].map((d) => [d, { pages: 0, minutes: 0 }]));
+  const byBook = {};
+  let pages = 0, minutes = 0;
+  for (const e of log) {
+    if (e.unit !== 'pag' || !(e.amount > 0) || !(e.minutes > 0)) continue;
+    const b = byId.get(e.book);
+    if (!b) continue;
+    const L = levels[diffOf(b) ?? 3];
+    L.pages += e.amount; L.minutes += e.minutes;
+    (byBook[e.book] ||= { pages: 0, minutes: 0 });
+    byBook[e.book].pages += e.amount; byBook[e.book].minutes += e.minutes;
+    pages += e.amount; minutes += e.minutes;
+  }
+  if (minutes < 20 || pages < 10) return { ready: false, pages, minutes };
+
+  // Regressão ponderada (pelas páginas) de ln(min/pág.) contra a dificuldade.
+  const point = ([d, v]) => ({ x: Number(d), y: Math.log(v.minutes / v.pages), w: v.pages });
+  let pts = Object.entries(levels).filter(([, v]) => v.pages >= 10).map(point);
+  if (!pts.length) pts = Object.entries(levels).filter(([, v]) => v.pages > 0).map(point);
+  const W = pts.reduce((s, p) => s + p.w, 0);
+  const mx = pts.reduce((s, p) => s + p.w * p.x, 0) / W;
+  const sxx = pts.reduce((s, p) => s + p.w * (p.x - mx) ** 2, 0);
+  const fitted = pts.length >= 2 && sxx > 0;
+  let slope = Math.log(DIFF_FACTOR);
+  if (fitted) {
+    const my = pts.reduce((s, p) => s + p.w * p.y, 0) / W;
+    const raw = pts.reduce((s, p) => s + p.w * (p.x - mx) * (p.y - my), 0) / sxx;
+    slope = Math.min(Math.log(1.6), Math.max(0, raw)); // mais difícil nunca é mais rápido
+  }
+  const base = Math.exp(pts.reduce((s, p) => s + p.w * (p.y - slope * (p.x - 3)), 0) / W); // min/pág. na dificuldade 3
+  const factor = Math.exp(slope);
+  for (const [d, L] of Object.entries(levels)) {
+    const model = base * factor ** (Number(d) - 3);
+    L.measured = L.pages ? L.minutes / L.pages : null;
+    L.est = (L.minutes + LEVEL_PRIOR * model) / (L.pages + LEVEL_PRIOR);
+  }
+  return { ready: true, pages, minutes, average: minutes / pages, base, factor, fitted, levels, byBook };
+}
+
+/** Minutos por página esperados num livro: o ritmo da dificuldade dele, puxado pelo que já foi medido nele. */
+export function minutesPerPage(speed, book) {
+  if (!speed?.ready) return null;
+  const lvl = speed.levels[diffOf(book) ?? 3].est;
+  const own = speed.byBook[book.id];
+  return own ? (own.minutes + BOOK_PRIOR * lvl) / (own.pages + BOOK_PRIOR) : lvl;
+}
+
+/**
+ * Tempo para ler um livro (ou o que falta dele) no seu ritmo. Audiobooks não entram: o tempo
+ * é a própria duração. Devolve null sem sessões suficientes ou sem o número de páginas.
+ */
+export function estimateBook(speed, book, { whole = false } = {}) {
+  if (book.format === 'audiobook') return null;
+  const mpp = minutesPerPage(speed, book);
+  const total = Number(book.progress?.total) || Number(book.ai?.pages) || 0;
+  if (!mpp || !total) return null;
+  const pages = whole ? total : Math.max(0, total - (Number(book.progress?.current) || 0));
+  return { pages, minutes: pages * mpp, mpp, difficulty: diffOf(book), own: !!speed.byBook[book.id] };
+}
