@@ -240,6 +240,30 @@ const routes = {
     return { matches: bookReferences(await loadReference(DATA), Array.isArray(books) ? books : []) };
   },
 
+  // Nota dos leitores na internet (Goodreads, Skoob, Amazon), buscada pela IA com busca na web.
+  'POST /api/ai/web-ratings': async (req) => {
+    const { books } = await body(req);
+    const list = (Array.isArray(books) ? books : [])
+      .filter((b) => b && typeof b.id === 'string' && typeof b.title === 'string' && b.title.trim())
+      .slice(0, 8).map((b) => ({ id: b.id, title: b.title.slice(0, 200), author: String(b.author || '').slice(0, 200) }));
+    if (!list.length) return { ratings: {}, provider: '' };
+    const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.webRatings(list), effort: 'low', web: true }, await loadSettings());
+    const ids = new Set(list.map((b) => b.id));
+    const ratings = {};
+    for (const r of Array.isArray(data.ratings) ? data.ratings : []) {
+      if (!r || !ids.has(r.id)) continue;
+      const rating = Number(r.rating);
+      const ok = r.rating != null && Number.isFinite(rating) && rating > 0 && rating <= 5;
+      const url = typeof r.url === 'string' && /^https?:\/\/[^\s"'<>]{3,500}$/.test(r.url) ? r.url : '';
+      ratings[r.id] = ok
+        ? { rating: Math.round(rating * 100) / 100, count: Number.isFinite(Number(r.count)) && Number(r.count) > 0 ? Math.round(Number(r.count)) : null,
+          source: String(r.source || '').slice(0, 40), url }
+        : { rating: null };
+    }
+    for (const id of ids) ratings[id] ||= { rating: null };
+    return { ratings, provider };
+  },
+
   'POST /api/ai/guide': async (req) => {
     const { book, library } = await body(req);
     const { data, provider } = await runAI({ system: prompts.SYSTEM, prompt: prompts.guide(book, library || []), effort: 'medium' }, await loadSettings());

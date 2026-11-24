@@ -1,7 +1,7 @@
 // Marginália: interface em JS puro, sem build. Estado único + render por string.
 import {
   localDay, addDays, daysBetween, isDay, applyDelta, byDay, streak, RANGES, rangeOf, series, totals,
-  pagesPerHour, finishedReadings, forecast,
+  pagesPerHour, finishedReadings, forecast, bookTime,
 } from './stats.js';
 
 // ============================================================ utilidades
@@ -49,6 +49,8 @@ const ICONS = {
   pen: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  pause: '<path d="M9 5v14M15 5v14"/>',
+  play: '<path d="M7 5v14l12-7z"/>',
   shelf: '<path d="M3 21h18M5 21V5M9 21V3M13 21V6M17 21l2.5-14"/>',
   grip: '<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',
   send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
@@ -151,6 +153,8 @@ const state = {
   ask: { chat: [], options: [], busy: false }, // conversa da aba "Pedir à IA"
   hideMissing: store.get('hideMissing') === '1', // plano do site: esconder livros que o leitor não tem
   rhythm: { range: store.get('rhythmRange') || 'mes', metric: store.get('rhythmMetric') || 'pages' },
+  ratings: { sort: store.get('ratingsSort') || 'nota', filter: null, section: store.get('ratingsSection') === 'nao-lidos' ? 'nao-lidos' : 'lidos', unreadSort: store.get('ratingsUnreadSort') || 'web' },
+  webQueue: null, // { done, total, stop } enquanto a IA busca notas na internet
 };
 const books = () => state.library.books;
 const byId = (id) => books().find((b) => b.id === id);
@@ -648,6 +652,19 @@ function sanitizePlan(plan) {
   };
 }
 
+// Nota dos leitores na internet: { rating (0-5 ou null = não encontrada), count, source, url, at }.
+function sanitizeWeb(w) {
+  if (!w || typeof w !== 'object' || Number.isNaN(Date.parse(w.at))) return null;
+  const r = Number(w.rating);
+  return {
+    rating: w.rating != null && Number.isFinite(r) && r > 0 && r <= 5 ? r : null,
+    count: Number(w.count) > 0 ? Math.round(Number(w.count)) : null,
+    source: str(w.source).slice(0, 40),
+    url: /^https?:\/\//.test(str(w.url)) ? str(w.url) : '',
+    at: str(w.at), provider: str(w.provider).slice(0, 40),
+  };
+}
+
 // Valida a biblioteca inteira (ao abrir e ao restaurar backup): ids seguros, tipos corretos.
 function sanitizeLibrary(lib) {
   const ids = new Set();
@@ -664,9 +681,11 @@ function sanitizeLibrary(lib) {
       format: FORMAT[b.format] ? b.format : 'fisico', ownership: OWNERSHIP[b.ownership] ? b.ownership : 'tenho',
       status: STATUS[b.status] ? b.status : 'quero_ler',
       progress,
+      rating: ratingOf(b.rating),
+      web: sanitizeWeb(b.web),
       notes: b.notes && typeof b.notes === 'object' ? b.notes : {},
       readings: arr(b.readings).filter((r) => r && typeof r === 'object').map((r) => ({
-        startedAt: str(r.startedAt).slice(0, 10), finishedAt: str(r.finishedAt).slice(0, 10), rating: clamp(Number(r.rating) || 0, 0, 5),
+        startedAt: str(r.startedAt).slice(0, 10), finishedAt: str(r.finishedAt).slice(0, 10), rating: ratingOf(r.rating),
       })),
       reread: !!b.reread,
       cover: /^(https?:\/\/|\/covers\/[\w-]+\.(jpg|png|webp|gif)(\?v=\w+)?$)/.test(str(b.cover)) ? b.cover : null,
@@ -698,7 +717,11 @@ function sanitizeLibrary(lib) {
     return x;
   }).filter((e) => e.amount > 0 || e.minutes > 0);
   const t = lib?.timer;
-  out.timer = t && ids.has(t.book) && !Number.isNaN(Date.parse(t.start)) ? { book: t.book, start: str(t.start) } : null;
+  out.timer = t && ids.has(t.book) && !Number.isNaN(Date.parse(t.start)) ? {
+    book: t.book, start: str(t.start),
+    paused: Math.max(0, Number(t.paused) || 0), // ms já pausados
+    pausedAt: t.pausedAt && !Number.isNaN(Date.parse(t.pausedAt)) ? str(t.pausedAt) : null,
+  } : null;
   delete out.plan;
   delete out.suggestions;
   return out;
@@ -791,7 +814,7 @@ function renderView() {
   for (const a of $$('.tabs a')) a.classList.toggle('active', a.dataset.view === state.view);
   const changedView = view.dataset.view !== state.view;
   view.dataset.view = state.view;
-  view.innerHTML = state.view === 'plano' ? viewPlan() : state.view === 'descobrir' ? viewDiscover() : state.view === 'ritmo' ? viewRhythm() : viewShelf();
+  view.innerHTML = state.view === 'plano' ? viewPlan() : state.view === 'descobrir' ? viewDiscover() : state.view === 'ritmo' ? viewRhythm() : state.view === 'notas' ? viewRatings() : viewShelf();
   // Calendário: começa mostrando as semanas mais recentes (no celular ele rola na horizontal).
   const heat = $('.heat-scroll');
   if (heat) heat.scrollLeft = heat.scrollWidth;
@@ -908,7 +931,7 @@ function shelfResults(list = filteredBooks()) {
 function bookTile(b, size = '') {
   return `<button class="book" data-action="open-book" data-id="${b.id}" title="${esc(b.title)}">
     ${coverHTML(b, { size })}
-    <div class="meta"><h3>${esc(b.title)}</h3><p>${esc(b.author || '—')}</p></div>
+    <div class="meta"><h3>${esc(b.title)}</h3><p>${esc(b.author || '—')}</p>${ratingBadge(b, 'tile')}</div>
   </button>`;
 }
 
@@ -1166,6 +1189,7 @@ function renderDrawer() {
         <textarea class="inline-edit title" rows="1" data-field="title" aria-label="Título">${esc(b.title)}</textarea>
         <input class="inline-edit muted" data-field="author" value="${esc(b.author)}" placeholder="Autor" aria-label="Autor">
         <div class="tags">
+          ${ratingBadge(b, 'tag')}
           ${b.ai?.category ? `<span class="tag">${esc(b.ai.category)}${b.ai.subcategory ? ` · ${esc(b.ai.subcategory)}` : ''}</span>` : ''}
           ${b.ai?.nature ? `<span class="tag ${NATURE_TAG[b.ai.nature] || ''}">${esc(b.ai.nature)}</span>` : ''}
           ${b.priority ? '<span class="tag accent">prioritário</span>' : ''}
@@ -1205,11 +1229,12 @@ function drawerOverview(b) {
       ${b.status !== 'lido' && b.status !== 'abandonado' ? `<div class="session-actions">${timerBtn(b, 'btn sm')}
         <button class="btn sm ghost" data-action="session-open" data-id="${b.id}">${icon('pen')}Registrar sessão</button></div>` : ''}
     </div>
+    ${timeBlock(b)}
 
     <div><span class="field-label">Formato</span>${segmented('format', FORMAT, b.format, FORMAT_ICON)}</div>
     ${refBlock(b)}
 
-    <div><span class="field-label">Sua nota</span><div class="stars">${[1, 2, 3, 4, 5].map((n) => `<button class="${n <= (b.rating || 0) ? 'on' : ''}" data-action="rate" data-value="${n}" aria-label="${n} estrela${n > 1 ? 's' : ''}">${icon('star')}</button>`).join('')}</div></div>
+    <div><span class="field-label">Sua nota</span>${ratingPicker(b.rating, 'data-action="rate"')}</div>
 
     ${ai ? `<div class="ai-block">
       <span class="field-label" style="margin:0;display:flex;align-items:center;gap:6px">${icon('sparkles').replace('<svg', '<svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"')}Sobre o livro</span>
@@ -1287,6 +1312,33 @@ function drawerOwnership(b) {
       <button class="btn sm danger ghost" data-action="delete-book" data-id="${b.id}">${icon('trash')}Excluir livro</button></div>`;
 }
 
+// Quanto tempo levou cada trecho deste livro (sessões cronometradas ou anotadas com tempo).
+function timeBlock(b) {
+  const t = bookTime(logOf(), b.id);
+  const reading = b.status !== 'lido' && b.status !== 'abandonado';
+  if (!t.sessions.length) {
+    return reading ? `<div class="time-block empty"><span class="field-label">Tempo de leitura</span>
+      <p class="faint small">Use <b>Cronometrar</b> ao começar a ler e <b>Parar</b> ao terminar: o app anota quantas páginas você leu e em quanto tempo.</p></div>` : '';
+  }
+  const audio = isAudio(b);
+  const left = Math.max(0, (Number(b.progress?.total) || 0) - (Number(b.progress?.current) || 0));
+  const eta = reading && !audio && left && t.pagesPerHour ? (left / t.pagesPerHour) * 60 : null;
+  const row = (e) => {
+    const amount = e.amount > 0 ? (audio ? `${fmtMin(e.amount)} ouvidos` : `${fmtNum(e.amount)} pág.`) : '';
+    const pace = !audio && e.amount > 0 ? `${fmtNum(e.amount / (e.minutes / 60))} pág./h` : '';
+    return `<li><span class="muted">${esc(dayLabel(e.date))}</span><span>${amount ? `<b>${amount}</b> em ` : ''}<b>${fmtMin(e.minutes)}</b></span><span class="faint small">${pace}</span></li>`;
+  };
+  return `<div class="time-block"><span class="field-label">Tempo de leitura</span>
+    <div class="time-stats">
+      <div><div class="k">Tempo total</div><div class="v">${fmtMin(t.minutes)}</div><div class="faint small">${plural(t.sessions.length, 'sessão', 'sessões')}</div></div>
+      ${audio ? '' : `<div><div class="k">Páginas cronometradas</div><div class="v">${fmtNum(t.pages)}</div><div class="faint small">${t.pages ? 'nas sessões com tempo' : 'anote até onde chegou'}</div></div>
+      <div><div class="k">Seu ritmo</div><div class="v">${t.pagesPerHour ? `${fmtNum(t.pagesPerHour)}<span class="faint small"> pág./h</span>` : '—'}</div><div class="faint small">${eta ? `faltam ~${fmtMin(eta)} de leitura` : t.pagesPerHour ? 'neste livro' : 'precisa de 10 min ou mais'}</div></div>`}
+    </div>
+    <ul class="time-list">${t.sessions.slice(0, 5).map(row).join('')}</ul>
+    ${t.sessions.length > 5 ? `<a class="faint small" href="#ritmo" data-action="close-overlays">Ver todas as sessões no Ritmo</a>` : ''}
+  </div>`;
+}
+
 // Histórico de leituras e releitura. Só aparece depois da primeira leitura concluída.
 function readingsBlock(b) {
   const past = arr(b.readings);
@@ -1294,10 +1346,10 @@ function readingsBlock(b) {
   const month = (d) => (d ? new Date(`${d}T12:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/\.? de /g, ' ') : '');
   const span = (r) => (r.startedAt && r.finishedAt ? `${month(r.startedAt)} → ${month(r.finishedAt)}`
     : r.finishedAt ? `terminou em ${month(r.finishedAt)}` : r.startedAt ? `começou em ${month(r.startedAt)}` : 'sem datas');
-  const stars = (n) => (n ? ` · ${'★'.repeat(n)}` : '');
-  const rows = past.map((r, i) => `<li><b>${i + 1}ª leitura</b><span class="muted">${esc(span(r))}${stars(r.rating)}</span>
+  const stars = (n) => (n ? ` · <span class="stars-mini" aria-label="nota ${n} de 5">${starsText(n)}</span>` : '');
+  const rows = past.map((r, i) => `<li><b>${i + 1}ª leitura</b><span class="muted">${esc(span(r))}${stars(ratingOf(r.rating))}</span>
     <button class="icon-btn" data-action="reading-remove" data-index="${i}" aria-label="Remover do histórico" title="Remover do histórico">${icon('x')}</button></li>`);
-  if (b.status === 'lido') rows.push(`<li><b>${past.length + 1}ª leitura</b><span class="muted">${esc(span(b))}${stars(b.rating)}</span></li>`);
+  if (b.status === 'lido') rows.push(`<li><b>${past.length + 1}ª leitura</b><span class="muted">${esc(span(b))}${stars(ratingOf(b.rating))}</span></li>`);
   else if (b.status === 'lendo') rows.push(`<li><b>${past.length + 1}ª leitura</b><span class="muted">em andamento${b.startedAt ? ` desde ${esc(month(b.startedAt))}` : ''}</span></li>`);
   return `<div class="readings"><span class="field-label">Leituras</span>
     <ul>${rows.join('')}</ul>
@@ -1312,8 +1364,8 @@ function readingsBlock(b) {
 function startReread(b) {
   const today = new Date().toISOString().slice(0, 10);
   updateBook(b.id, {
-    readings: [...arr(b.readings), { startedAt: b.startedAt || '', finishedAt: b.finishedAt || '', rating: b.rating || 0 }],
-    status: 'lendo', startedAt: today, finishedAt: null, reread: false,
+    readings: [...arr(b.readings), { startedAt: b.startedAt || '', finishedAt: b.finishedAt || '', rating: ratingOf(b.rating) }],
+    status: 'lendo', startedAt: today, finishedAt: null, reread: false, rating: 0,
     progress: { ...b.progress, current: 0, mark: 0 },
   });
   toast(`Começando a ${pastReads(byId(b.id)) + 1}ª leitura de “${b.title}”.`);
@@ -1334,10 +1386,44 @@ function setStatus(b, status) {
     if (b.progress?.total) patch.progress = { ...b.progress, current: b.progress.total };
   }
   const wasReading = b.status === 'lendo' || b.status === 'pausado';
+  const finishing = status === 'lido' && b.status !== 'lido';
   updateBook(b.id, patch);
   // "Terminei" durante a leitura conta as páginas que faltavam como lidas hoje; marcar como lido
   // um livro que nem tinha começado (lido antes de usar o app) não entra no registro.
   if (status === 'lido') { if (wasReading) trackProgress(byId(b.id)); else resetMark(byId(b.id)); }
+  if (finishing) askRating(byId(b.id));
+}
+
+// ============================================================ nota (1 a 5; 0 = sem nota)
+const ratingOf = (v) => clamp(Math.round(Number(v)) || 0, 0, 5);
+const starsText = (n) => `<span class="s-on">${'★'.repeat(n)}</span><span class="s-off">${'★'.repeat(5 - n)}</span>`;
+// Nota visível de um livro lido (estante, painel): estrelas ou "sem nota".
+function ratingBadge(b, cls = '') {
+  if (b.status !== 'lido') return '';
+  const n = ratingOf(b.rating);
+  return n ? `<span class="rating-badge ${cls}" role="img" aria-label="nota ${n} de 5">${starsText(n)}</span>`
+    : `<span class="rating-badge none ${cls}">sem nota</span>`;
+}
+const ratingLabel = (n) => (n ? `${n} de 5` : 'Sem nota');
+
+function ratingPicker(value, attrs, cls = '') {
+  const v = ratingOf(value);
+  return `<div class="rating ${cls}" role="group" aria-label="Nota de 1 a 5">
+    ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star ${n <= v ? 'on' : ''}" ${attrs} data-value="${n}" aria-pressed="${v === n}" aria-label="${n} de 5" title="${n} de 5">${icon('star')}</button>`).join('')}
+    <span class="rating-label">${ratingLabel(v)}</span>
+  </div>`;
+}
+
+// Ao concluir um livro, pede a nota. Dá para mudar depois no painel do livro.
+function askRating(b) {
+  if (!b) return;
+  showModal(`<div class="modal-head"><h2>Terminou! 🎉</h2><button class="icon-btn" data-action="close-modal" aria-label="Fechar">${icon('x')}</button></div>
+  <div class="modal-body rate-finished">
+    <p><b>${esc(b.title)}</b>${b.author ? `<span class="muted">, de ${esc(b.author)}</span>` : ''}</p>
+    <div><span class="field-label">Que nota você dá, de 1 a 5?</span>${ratingPicker(b.rating, `data-action="rate-finished" data-id="${b.id}"`, 'lg')}</div>
+    <p class="faint small">Dá para mudar depois em <b>Sua nota</b>, no painel do livro.</p>
+    <div class="modal-foot" style="padding:0"><button type="button" class="btn ghost" data-action="close-modal">Agora não</button></div>
+  </div>`, 'rate');
 }
 
 // ============================================================ modais
@@ -1825,7 +1911,14 @@ document.addEventListener('click', async (e) => {
       renderAll();
       break;
     }
-    case 'rate': { const b = byId(state.drawer.id); const v = Number(el.dataset.value); updateBook(b.id, { rating: b.rating === v ? 0 : v }); renderDrawer(); break; }
+    case 'rate': { const b = byId(state.drawer.id); const v = Number(el.dataset.value); updateBook(b.id, { rating: ratingOf(b.rating) === v ? 0 : v }); renderDrawer(); break; }
+    case 'rate-finished': {
+      const b = byId(id); const v = ratingOf(el.dataset.value);
+      if (!b || !v) break;
+      updateBook(b.id, { rating: v }); closeModal(); renderAll();
+      toast(`Nota ${v} de 5 para “${b.title}”.`);
+      break;
+    }
     case 'bump': {
       e.stopPropagation();
       const b = byId(id);
@@ -1836,8 +1929,9 @@ document.addEventListener('click', async (e) => {
       renderAll();
       break;
     }
-    case 'finish': e.stopPropagation(); setStatus(byId(id), 'lido'); renderAll(); toast(`“${byId(id).title}” concluído. 🎉`); break;
+    case 'finish': e.stopPropagation(); setStatus(byId(id), 'lido'); renderAll(); break;
     case 'timer-start': e.stopPropagation(); startTimer(id); break;
+    case 'timer-pause': toggleTimerPause(); break;
     case 'timer-stop': {
       e.stopPropagation();
       const t = state.library.timer;
@@ -1861,6 +1955,19 @@ document.addEventListener('click', async (e) => {
     }
     case 'session-open': e.stopPropagation(); openSession({ id }); break;
     case 'log-remove': state.library.log = logOf().filter((x) => x.id !== id); persist(); renderView(); break;
+    case 'rate-book': {
+      const b = byId(id); const v = Number(el.dataset.value);
+      if (!b || b.status !== 'lido') break;
+      updateBook(b.id, { rating: ratingOf(b.rating) === v ? 0 : v }); renderAll();
+      break;
+    }
+    case 'ratings-section': state.ratings.section = el.dataset.value; store.set('ratingsSection', el.dataset.value); renderView(); break;
+    case 'ratings-unread-sort': state.ratings.unreadSort = el.dataset.value; store.set('ratingsUnreadSort', el.dataset.value); renderView(); break;
+    case 'web-ratings': fetchWebRatings(id ? [id] : null); break;
+    case 'web-ratings-stop': if (state.webQueue) { state.webQueue.stop = true; renderView(); } break;
+    case 'mark-read': { const b = byId(id); if (b) { setStatus(b, 'lido'); renderAll(); } break; }
+    case 'ratings-sort': state.ratings.sort = el.dataset.value; store.set('ratingsSort', el.dataset.value); renderView(); break;
+    case 'ratings-filter': { const v = Number(el.dataset.value); state.ratings.filter = state.ratings.filter === v ? null : v; renderView(); break; }
     case 'rhythm-range': state.rhythm.range = el.dataset.value; store.set('rhythmRange', el.dataset.value); renderView(); break;
     case 'rhythm-metric': state.rhythm.metric = el.dataset.value; store.set('rhythmMetric', el.dataset.value); renderView(); break;
     case 'filter': state.filters[el.dataset.key] = el.dataset.value; renderView(); break;
@@ -2119,6 +2226,190 @@ let modalPressOnBackdrop = false;
 modal().addEventListener('mousedown', (e) => { modalPressOnBackdrop = e.target === modal(); });
 modal().addEventListener('click', (e) => { if (e.target === modal() && modalPressOnBackdrop) closeModal(); });
 
+// ============================================================ view: notas
+const RATING_SORT = { nota: 'Nota', recentes: 'Mais recentes', titulo: 'Título' };
+const STAR_WORD = (n) => (n ? plural(n, 'estrela', 'estrelas') : 'Sem nota');
+
+// Livros já lidos: os concluídos e os que estão em releitura (com a nota da última leitura).
+function readBooks() {
+  return books().filter((b) => timesRead(b) > 0).map((b) => {
+    const past = arr(b.readings);
+    const done = b.status === 'lido';
+    const last = done ? b : past.at(-1);
+    return {
+      book: b, rereading: !done, times: timesRead(b),
+      rating: ratingOf(last.rating), finishedAt: str(last.finishedAt).slice(0, 10),
+      before: (done ? past : past.slice(0, -1)).map((r) => ratingOf(r.rating)),
+    };
+  });
+}
+
+// Ainda não lidos (nem em releitura); os abandonados ficam de fora.
+const unreadBooks = () => books().filter((b) => timesRead(b) === 0 && b.status !== 'abandonado');
+
+function viewRatings() {
+  if (!books().length) return emptyShelf();
+  const rows = readBooks();
+  const unread = unreadBooks();
+  const section = state.ratings.section === 'nao-lidos' ? 'nao-lidos' : 'lidos';
+  const head = `<div class="view-head"><div><h1>Notas</h1><p class="lede">${section === 'lidos'
+    ? 'Os livros que você já leu e o que achou de cada um.'
+    : 'O que os leitores acham dos livros que você ainda vai ler. Quando terminar um, ele passa para os lidos com a sua nota.'}</p></div></div>
+    <div class="ratings-switch"><div class="segmented" role="tablist" aria-label="Seção">
+      <button role="tab" class="${section === 'lidos' ? 'active' : ''}" aria-selected="${section === 'lidos'}" data-action="ratings-section" data-value="lidos">Lidos <span class="count">${rows.length}</span></button>
+      <button role="tab" class="${section === 'nao-lidos' ? 'active' : ''}" aria-selected="${section === 'nao-lidos'}" data-action="ratings-section" data-value="nao-lidos">Não lidos <span class="count">${unread.length}</span></button>
+    </div></div>`;
+  if (section === 'nao-lidos') return `<div class="fade-in">${head}${unreadSection(unread)}</div>`;
+  if (!rows.length) {
+    return `<div class="fade-in">${head}<div class="card empty-card"><p class="muted small">Quando você terminar um livro, ele aparece aqui com a sua nota.</p></div></div>`;
+  }
+  const rated = rows.filter((r) => r.rating);
+  const avg = rated.length ? rated.reduce((s, r) => s + r.rating, 0) / rated.length : 0;
+  const counts = [5, 4, 3, 2, 1, 0].map((n) => [n, rows.filter((r) => r.rating === n).length]);
+  const max = Math.max(1, ...counts.map(([, c]) => c));
+  const f = state.ratings.filter;
+  const sort = RATING_SORT[state.ratings.sort] ? state.ratings.sort : 'nota';
+  const coll = (a, b) => a.book.title.localeCompare(b.book.title, 'pt-BR', { sensitivity: 'base' });
+  const recent = (a, b) => (b.finishedAt || '').localeCompare(a.finishedAt || '') || coll(a, b);
+  const shown = rows.filter((r) => f == null || r.rating === f)
+    .sort(sort === 'titulo' ? coll : sort === 'recentes' ? recent : (a, b) => (b.rating || -1) - (a.rating || -1) || recent(a, b));
+  const groups = sort === 'nota'
+    ? [5, 4, 3, 2, 1, 0].map((n) => [n, shown.filter((r) => r.rating === n)]).filter(([, g]) => g.length)
+    : [[null, shown]];
+  const fives = counts[0][1];
+  const unrated = counts[5][1];
+  const reads = rows.reduce((s, r) => s + r.times, 0);
+
+  return `<div class="fade-in">
+    ${head}
+    <div class="stats">
+      <div class="card stat"><div class="label">Lidos</div><div class="value">${rows.length}</div>
+        <div class="sub">${reads > rows.length ? `${plural(reads, 'leitura', 'leituras')} ao todo` : 'livros concluídos'}</div></div>
+      <div class="card stat"><div class="label">Nota média</div><div class="value">${rated.length ? avg.toFixed(1).replace('.', ',') : '—'}<span class="faint" style="font-size:18px"> / 5</span></div>
+        <div class="sub">${rated.length ? `de ${plural(rated.length, 'livro avaliado', 'livros avaliados')}` : 'nenhum avaliado ainda'}</div></div>
+      <div class="card stat"><div class="label">5 estrelas</div><div class="value">${fives}</div>
+        <div class="sub">${fives ? 'seus favoritos' : 'nenhum ainda'}</div></div>
+      <div class="card stat"><div class="label">Sem nota</div><div class="value">${unrated}</div>
+        <div class="sub">${unrated ? 'avalie direto na lista' : 'todos avaliados'}</div></div>
+    </div>
+
+    <div class="card chart-card">
+      <div class="chart-head"><h2>Distribuição das notas</h2><span class="faint small">${f == null ? 'toque numa linha para filtrar' : `<button class="link-btn" data-action="ratings-filter" data-value="${f}">Mostrar todos</button>`}</span></div>
+      <div class="dist">${counts.map(([n, c]) => `<button class="dist-row ${f === n ? 'active' : ''} ${f != null && f !== n ? 'dim' : ''}" data-action="ratings-filter" data-value="${n}" aria-pressed="${f === n}" aria-label="${STAR_WORD(n)}: ${plural(c, 'livro', 'livros')}" ${c ? '' : 'disabled'}>
+        <span class="dist-label">${n ? `<span class="stars-mini">${starsText(n)}</span>` : '<span class="faint small">Sem nota</span>'}</span>
+        <span class="dist-track"><span class="dist-bar ${n ? '' : 'none'}" style="width:${(c / max) * 100}%"></span></span>
+        <span class="dist-count">${c}</span>
+      </button>`).join('')}</div>
+    </div>
+
+    <div class="section-title ratings-head"><h2>${f == null ? 'Todos os lidos' : STAR_WORD(f)}</h2>
+      <div class="segmented" role="tablist" aria-label="Ordenar por">${Object.entries(RATING_SORT).map(([k, v]) => `<button role="tab" class="${sort === k ? 'active' : ''}" aria-selected="${sort === k}" data-action="ratings-sort" data-value="${k}">${v}</button>`).join('')}</div></div>
+    ${groups.map(([n, g]) => `${n != null && f == null ? `<h3 class="rated-group">${n ? `<span class="stars-mini">${starsText(n)}</span>` : 'Sem nota'}<span class="faint small">${g.length}</span></h3>` : ''}
+      <div class="card rated-list">${g.map(ratedRow).join('')}</div>`).join('')}
+  </div>`;
+}
+
+const fmtRating = (n) => n.toFixed(n >= 10 ? 0 : 1).replace('.', ',');
+const fmtCount = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.', ',')} mil` : String(n));
+
+function unreadSection(list) {
+  if (!list.length) return '<div class="card empty-card"><p class="muted small">Nenhum livro esperando leitura. Tudo lido!</p></div>';
+  const q = state.webQueue;
+  const missing = list.filter((b) => !b.web);
+  const found = list.filter((b) => b.web?.rating);
+  const sort = state.ratings.unreadSort === 'titulo' ? 'titulo' : 'web';
+  const coll = (a, b) => a.title.localeCompare(b.title, 'pt-BR', { sensitivity: 'base' });
+  const sorted = [...list].sort(sort === 'titulo' ? coll : (a, b) => (b.web?.rating || 0) - (a.web?.rating || 0) || coll(a, b));
+  const avg = found.length ? found.reduce((s, b) => s + b.web.rating, 0) / found.length : 0;
+  const bar = q
+    ? `<div class="web-bar card"><span class="spinner"></span><div class="txt"><b>Buscando notas na internet… ${q.done}/${q.total}</b><span class="faint small">A IA pesquisa alguns livros por vez; cada lote leva cerca de 1 minuto.</span></div>
+      <button class="btn sm ghost" data-action="web-ratings-stop" ${q.stop ? 'disabled' : ''}>${q.stop ? 'Parando…' : 'Parar'}</button></div>`
+    : `<div class="web-bar card">${icon('sparkles')}<div class="txt"><b>${missing.length ? `${plural(missing.length, 'livro', 'livros')} sem nota da internet` : 'Notas da internet buscadas'}</b>
+      <span class="faint small">${found.length ? `Média dos leitores: ${fmtRating(avg)} de 5 em ${plural(found.length, 'livro', 'livros')}. ` : ''}Fontes: Goodreads, Skoob ou Amazon.</span></div>
+      ${missing.length ? `<button class="btn sm primary" data-action="web-ratings">${icon('sparkles')}Buscar com IA</button>` : ''}</div>`;
+  return `${bar}
+    <div class="section-title ratings-head"><h2>Não lidos</h2>
+      <div class="segmented" role="tablist" aria-label="Ordenar por">${[['web', 'Nota na internet'], ['titulo', 'Título']].map(([k, v]) => `<button role="tab" class="${sort === k ? 'active' : ''}" aria-selected="${sort === k}" data-action="ratings-unread-sort" data-value="${k}">${v}</button>`).join('')}</div></div>
+    <div class="card rated-list">${sorted.map(unreadRow).join('')}</div>`;
+}
+
+function unreadRow(b) {
+  const w = b.web;
+  const busy = state.webQueue?.ids?.has(b.id);
+  const status = b.status !== 'quero_ler' ? STATUS[b.status].toLowerCase() : '';
+  const source = w?.rating ? [w.count ? `${fmtCount(w.count)} avaliações` : '', w.source].filter(Boolean).join(' no ') : '';
+  const right = busy ? '<span class="spinner" title="Buscando"></span>'
+    : w?.rating ? `<div class="web-score"><b>${fmtRating(w.rating)}</b><span class="s-on">★</span></div>`
+      : w ? `<button class="link-btn small" data-action="web-ratings" data-id="${b.id}" title="Buscar de novo">não encontrada</button>`
+        : `<button class="btn sm ghost" data-action="web-ratings" data-id="${b.id}" ${state.webQueue ? 'disabled' : ''}>Buscar</button>`;
+  return `<div class="rated-row">
+    <button class="rated-open" data-action="open-book" data-id="${b.id}">
+      ${coverHTML(b, { size: 'xs', badges: false })}
+      <span class="done-title"><b>${esc(b.title)}</b><span class="faint small">${esc(b.author || '')}</span>
+        ${status || source ? `<span class="faint small">${esc([status, source].filter(Boolean).join(' · '))}</span>` : ''}</span>
+    </button>
+    <div class="unread-side">
+      ${w?.rating && w.url ? `<a class="web-link" href="${esc(w.url)}" target="_blank" rel="noopener noreferrer" title="Ver em ${esc(w.source || 'site')}">${right}</a>` : right}
+      <button class="btn sm ghost mark-read" data-action="mark-read" data-id="${b.id}" title="Marcar como lido e dar sua nota">${icon('check')}<span>Já li</span></button>
+    </div>
+  </div>`;
+}
+
+// Busca as notas na internet em lotes pequenos (a IA pesquisa cada livro); salva a cada lote.
+async function fetchWebRatings(only = null) {
+  if (state.webQueue) return;
+  const queue = only ? only.map(byId).filter(Boolean) : unreadBooks().filter((b) => !b.web);
+  if (!queue.length) return;
+  state.webQueue = { done: 0, total: queue.length, stop: false, ids: new Set(queue.map((b) => b.id)) };
+  renderView();
+  let found = 0, failed = 0;
+  const BATCH = 5;
+  for (let i = 0; i < queue.length && !state.webQueue.stop; i += BATCH) {
+    const batch = queue.slice(i, i + BATCH);
+    try {
+      const { ratings, provider } = await api('POST', '/api/ai/web-ratings', { books: batch.map((b) => ({ id: b.id, title: b.title, author: b.author })) });
+      const at = new Date().toISOString();
+      for (const b of batch) {
+        const r = ratings?.[b.id];
+        if (!r || !byId(b.id)) continue;
+        if (r.rating) found++;
+        updateBook(b.id, { web: sanitizeWeb({ ...r, at, provider }) });
+      }
+    } catch (e) {
+      failed++;
+      toast(`Falha ao buscar notas: ${e.message}`, 'err');
+      if (failed >= 2) break;
+    }
+    for (const b of batch) state.webQueue.ids.delete(b.id);
+    state.webQueue.done = Math.min(queue.length, i + BATCH);
+    if (state.view === 'notas') renderView();
+  }
+  const stopped = state.webQueue.stop;
+  state.webQueue = null;
+  renderAll();
+  if (!failed || found) toast(`${stopped ? 'Busca interrompida. ' : ''}Notas encontradas para ${plural(found, 'livro', 'livros')}.`);
+}
+
+function ratedRow(r) {
+  const b = r.book;
+  const meta = [
+    r.finishedAt ? `terminou em ${shortDate(r.finishedAt)}` : '',
+    r.rereading ? 'relendo agora' : r.times > 1 ? `lido ${r.times}×` : '',
+  ].filter(Boolean).join(' · ');
+  const before = r.before.filter(Boolean);
+  const web = b.web?.rating ? `${b.web.source || 'internet'}: ${fmtRating(b.web.rating)}★` : '';
+  const sub = [meta, before.length ? `antes: ${before.map((n) => `${n}★`).join(', ')}` : '', web].filter(Boolean).join(' · ');
+  return `<div class="rated-row">
+    <button class="rated-open" data-action="open-book" data-id="${b.id}">
+      ${coverHTML(b, { size: 'xs', badges: false })}
+      <span class="done-title"><b>${esc(b.title)}</b><span class="faint small">${esc(b.author || '')}</span>${sub ? `<span class="faint small">${esc(sub)}</span>` : ''}</span>
+    </button>
+    <div class="rated-stars">${r.rereading
+      ? (r.rating ? `<span class="stars-mini" aria-label="nota ${r.rating} de 5">${starsText(r.rating)}</span>` : '<span class="faint small">sem nota</span>')
+      : ratingPicker(r.rating, `data-action="rate-book" data-id="${b.id}"`, 'sm')}</div>
+  </div>`;
+}
+
 // ============================================================ view: ritmo
 const fmtNum = (n) => Math.round(n).toLocaleString('pt-BR');
 function fmtMin(m) {
@@ -2274,7 +2565,7 @@ function doneList(rows, everDone) {
       ${coverHTML(b, { size: 'xs', badges: false })}
       <span class="done-title"><b>${esc(b.title)}</b><span class="faint small">${esc(b.author || '')}${r.nth > 1 ? ` · ${r.nth}ª leitura` : ''}</span></span>
       <span class="done-days">${r.days ? `<b>${plural(r.days, 'dia', 'dias')}</b><span class="faint small">${pace}</span>` : '<span class="faint small">sem data de início</span>'}</span>
-      <span class="done-when small muted">${r.finishedAt ? esc(shortDate(r.finishedAt)) : ''}${r.rating ? `<span class="stars-mini" aria-label="${r.rating} estrelas">${'★'.repeat(r.rating)}</span>` : ''}</span>
+      <span class="done-when small muted">${r.finishedAt ? esc(shortDate(r.finishedAt)) : ''}${r.rating ? `<span class="stars-mini" aria-label="nota ${r.rating} de 5">${starsText(r.rating)}</span>` : ''}</span>
     </button>`;
   }).join('')}</div>`;
 }
@@ -2315,7 +2606,20 @@ document.addEventListener('focusin', (e) => { const el = e.target.closest?.('[da
 document.addEventListener('scroll', hideTip, true);
 
 // ============================================================ cronômetro e sessões
-const timerElapsed = () => { const t = state.library.timer; return t ? Math.max(0, Date.now() - Date.parse(t.start)) : 0; };
+function timerElapsed() {
+  const t = state.library.timer;
+  if (!t) return 0;
+  const end = t.pausedAt ? Date.parse(t.pausedAt) : Date.now();
+  return Math.max(0, end - Date.parse(t.start) - (Number(t.paused) || 0));
+}
+function toggleTimerPause() {
+  const t = state.library.timer;
+  if (!t) return;
+  if (t.pausedAt) { t.paused = (Number(t.paused) || 0) + Math.max(0, Date.now() - Date.parse(t.pausedAt)); t.pausedAt = null; }
+  else t.pausedAt = new Date().toISOString();
+  persist();
+  renderTimerBar();
+}
 function clockText(ms) {
   const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
   return `${h ? `${h}:${String(m).padStart(2, '0')}` : m}:${String(r).padStart(2, '0')}`;
@@ -2327,15 +2631,18 @@ function renderTimerBar() {
   document.body.classList.toggle('has-timer', !!b);
   if (!b) { bar.hidden = true; bar.innerHTML = ''; return; }
   bar.hidden = false;
+  const paused = !!t.pausedAt;
+  bar.classList.toggle('paused', paused);
   bar.innerHTML = `<span class="pulse" aria-hidden="true"></span>
     <button class="timer-book" data-action="open-book" data-id="${b.id}" title="${esc(b.title)}">${esc(b.title)}</button>
-    <span class="timer-clock">${clockText(timerElapsed())}</span>
+    <span class="timer-clock" aria-label="${paused ? 'pausado' : 'tempo'}">${clockText(timerElapsed())}</span>
+    <button class="icon-btn timer-pause" data-action="timer-pause" title="${paused ? 'Continuar' : 'Pausar'}" aria-label="${paused ? 'Continuar' : 'Pausar'}" aria-pressed="${paused}">${icon(paused ? 'play' : 'pause')}</button>
     <button class="btn sm primary" data-action="timer-stop" data-id="${b.id}">Parar</button>
     <button class="icon-btn" data-action="timer-cancel" title="Descartar a sessão" aria-label="Descartar a sessão">${icon('x')}</button>`;
 }
 setInterval(() => {
   const el = $('#timer-bar .timer-clock');
-  if (el && state.library.timer) el.textContent = clockText(timerElapsed());
+  if (el && state.library.timer && !state.library.timer.pausedAt) el.textContent = clockText(timerElapsed());
 }, 1000);
 
 function startTimer(id) {
@@ -2348,7 +2655,7 @@ function startTimer(id) {
   }
   trackProgress(b); // o que foi marcado antes não entra na sessão
   if (b.status === 'quero_ler' || b.status === 'pausado') setStatus(b, 'lendo');
-  state.library.timer = { book: id, start: new Date().toISOString() };
+  state.library.timer = { book: id, start: new Date().toISOString(), paused: 0, pausedAt: null };
   persist();
   renderAll();
   toast(`Cronometrando “${b.title}”. Boa leitura!`);
@@ -2407,8 +2714,9 @@ function saveSession(f) {
   if (f.dataset.timer === '1') state.library.timer = null;
   persist();
   closeModal();
-  const what = [delta > 0 ? (isAudio(b) ? `${fmtMin(delta)} ouvidos` : plural(delta, 'página', 'páginas')) : '', minutes ? `em ${fmtMin(minutes)}` : ''].filter(Boolean).join(' ');
-  if (total && pos >= total && byId(b.id).status !== 'lido') { setStatus(byId(b.id), 'lido'); toast(`“${b.title}” concluído. 🎉`); }
+  const pace = delta > 0 && minutes && !isAudio(b) ? ` (~${fmtNum(delta / (minutes / 60))} pág. por hora)` : '';
+  const what = [delta > 0 ? (isAudio(b) ? `${fmtMin(delta)} ouvidos` : plural(delta, 'página', 'páginas')) : '', minutes ? `em ${fmtMin(minutes)}${pace}` : ''].filter(Boolean).join(' ');
+  if (total && pos >= total && byId(b.id).status !== 'lido') setStatus(byId(b.id), 'lido');
   else toast(what ? `Sessão registrada: ${what}.` : 'Sessão registrada.');
   renderAll();
 }
@@ -2430,7 +2738,7 @@ function toggleTheme() {
 }
 function route() {
   const v = location.hash.replace('#', '');
-  state.view = ['estante', 'plano', 'descobrir', 'ritmo'].includes(v) ? v : 'estante';
+  state.view = ['estante', 'plano', 'descobrir', 'ritmo', 'notas'].includes(v) ? v : 'estante';
   renderView();
   window.scrollTo({ top: 0 });
 }

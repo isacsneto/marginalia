@@ -119,6 +119,21 @@ export function pagesPerHour(log, from = '0000', to = '9999') {
   return min >= 10 ? pages / (min / 60) : null;
 }
 
+/**
+ * Tempo de leitura de um livro: sessões com tempo anotado (cronômetro ou à mão).
+ * Para livros em páginas, pagesPerHour usa só as sessões que têm páginas e tempo.
+ */
+export function bookTime(log, book) {
+  const sessions = log.filter((e) => e.book === book && e.minutes > 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  let minutes = 0, pages = 0, pagedMin = 0;
+  for (const e of sessions) {
+    minutes += e.minutes;
+    if (e.unit === 'pag' && e.amount > 0) { pages += e.amount; pagedMin += e.minutes; }
+  }
+  return { sessions, minutes, pages, pagesPerHour: pagedMin >= 10 ? pages / (pagedMin / 60) : null };
+}
+
 const size = (b) => Number(b.progress?.total) || (b.format === 'audiobook' ? 0 : Number(b.ai?.pages) || 0);
 
 /** Leituras concluídas (inclui releituras do histórico), da mais recente para a mais antiga. */

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   localDay, addDays, daysBetween, applyDelta, byDay, streak, rangeOf, series, totals,
-  pagesPerHour, finishedReadings, forecast,
+  pagesPerHour, finishedReadings, forecast, bookTime,
 } from '../public/stats.js';
 
 let n = 0;
@@ -97,4 +97,20 @@ test('previsão de término pelo ritmo recente', () => {
   assert.equal(f.last, '2026-11-08');
   // Sem total, não prevê o fim.
   assert.equal(forecast({ ...book, progress: { current: 100 } }, log, '2026-11-09').days, null);
+});
+
+test('tempo de leitura por livro: só sessões com tempo, ritmo com páginas', () => {
+  const log = [
+    { id: 'a1', book: 'a', date: '2026-11-01', amount: 20, unit: 'pag', minutes: 30 },
+    { id: 'a2', book: 'a', date: '2026-11-03', amount: 0, unit: 'pag', minutes: 15 }, // só tempo
+    { id: 'a3', book: 'a', date: '2026-11-02', amount: 40, unit: 'pag' }, // sem tempo: fica fora
+    { id: 'b1', book: 'b', date: '2026-11-02', amount: 10, unit: 'pag', minutes: 60 },
+  ];
+  const t = bookTime(log, 'a');
+  assert.deepEqual(t.sessions.map((e) => e.id), ['a2', 'a1']); // mais recente primeiro
+  assert.equal(t.minutes, 45);
+  assert.equal(t.pages, 20);
+  assert.equal(t.pagesPerHour, 40); // 20 pág. em 30 min
+  assert.equal(bookTime(log, 'c').pagesPerHour, null);
+  assert.equal(bookTime([{ id: 'x', book: 'c', date: '2026-11-01', amount: 5, unit: 'pag', minutes: 5 }], 'c').pagesPerHour, null); // menos de 10 min
 });
