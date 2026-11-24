@@ -342,7 +342,9 @@ function coverHTML(b, { size = '', badges = true } = {}) {
 // Capas automáticas: o servidor busca (Bing Imagens, Google Books, Open Library), valida
 // a proporção e salva uma cópia local em data/covers. coverV marca livros já processados.
 // 3: o Bing mudou a página de busca; livros que ficaram sem capa são buscados de novo.
-const COVER_V = 3;
+// 4: o Bing às vezes devolve imagens aleatórias; entrou o DuckDuckGo e quem ficou sem capa é rebuscado.
+// Quando as buscas de imagem estão fora do ar (retry), o livro fica na fila por até 3 aberturas.
+const COVER_V = 4;
 const isLocalCover = (c) => typeof c === 'string' && c.startsWith('/covers/');
 let coverQueueRunning = false;
 async function fillCovers() {
@@ -366,7 +368,8 @@ async function fillCovers() {
           if (!r?.cover && !isLocalCover(b.cover)) {
             r = await api('POST', '/api/cover/auto', { id: b.id, title: b.title, author: b.author, format: b.format });
           }
-          const patch = { coverV: COVER_V };
+          const misses = (b.coverMiss || 0) + 1;
+          const patch = r?.retry && !r.cover && misses < 3 ? { coverMiss: misses } : { coverV: COVER_V, coverMiss: 0 };
           if (r?.cover) { patch.cover = r.cover; found++; }
           if (r?.pages && !b.progress?.total && !isAudio(b)) patch.progress = { ...b.progress, total: r.pages };
           updateBook(b.id, patch);
